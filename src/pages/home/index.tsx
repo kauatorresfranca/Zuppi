@@ -1,0 +1,84 @@
+import * as S from "./styles";
+import logo from "../../assets/images/z.png";
+import Button from "../../components/button";
+import { useState } from "react";
+import Modal from "../../components/modal";
+
+const Home = () => {
+  const [modalLoginIsOpen, setModalLoginIsOpen] = useState(false);
+  const [modalCriarIsOpen, setModalCriarIsOpen] = useState(false);
+
+  return (
+    <>
+      <S.Container>
+        <img src={logo} alt="logo" />
+        <S.HeroSection>
+          <h2>Acontecendo agora</h2>
+          <S.ActionSection>
+            <h3>Inscreva-se Hoje</h3>
+            <Button variant="primary" onClick={() => setModalCriarIsOpen(true)}>
+              Criar conta
+            </Button>
+
+            <p>
+              Ao se inscrever, você concorda com os{" "}
+              <span>Termos de Serviço</span> e a{" "}
+              <span>Política de Privacidade</span>, incluindo o{" "}
+              <span>Uso de Cookies</span>.
+            </p>
+
+            <h4>Já tem uma conta?</h4>
+            <Button
+              variant="secondary"
+              onClick={() => setModalLoginIsOpen(true)}
+            >
+              Entrar
+            </Button>
+          </S.ActionSection>
+        </S.HeroSection>
+      </S.Container>
+
+      {/* Modal de Criar Conta */}
+      <Modal isOpen={modalCriarIsOpen}>
+        <h2>Criar conta</h2>
+        <i
+          className="ri-close-fill"
+          onClick={() => setModalCriarIsOpen(false)}
+        ></i>
+        <form>
+          <S.InputGroup>
+            <input type="text" placeholder="Nome" />
+            <input type="text" placeholder="Email" />
+            <input type="text" placeholder="Senha" />
+            <input type="text" placeholder="Confirmar senha" />
+          </S.InputGroup>
+          <p>
+            Já tem uma conta ? <span>Faça login</span>
+          </p>
+          <Button variant="primary">Criar Conta</Button>
+        </form>
+      </Modal>
+
+      {/* Modal de Login */}
+      <Modal isOpen={modalLoginIsOpen}>
+        <h2>Entrar na minha conta</h2>
+        <i
+          className="ri-close-fill"
+          onClick={() => setModalLoginIsOpen(false)}
+        ></i>
+        <form>
+          <S.InputGroup>
+            <input type="text" placeholder="Email" />
+            <input type="text" placeholder="Senha" />
+          </S.InputGroup>
+          <p>
+            Ainda não tem uma conta ? <span>Criar uma conta</span>
+          </p>
+          <Button variant="primary">Entrar</Button>
+        </form>
+      </Modal>
+    </>
+  );
+};
+
+export default Home;
