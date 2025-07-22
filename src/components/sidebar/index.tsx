@@ -5,7 +5,7 @@ const SideBar = () => {
   return (
     <S.SideBar>
       <h1>
-        <i className="ri-twitter-fill"></i>
+        <i className="ri-twitter-fill logo"></i>
       </h1>
       <S.MenuList>
         <S.MenuItem>

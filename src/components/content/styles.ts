@@ -3,7 +3,7 @@ import styled from "styled-components";
 export const Content = styled.div`
   position: relative;
   z-index: 10000;
-  padding-top: 80px;
+  padding-top: 48px;
   width: 600px;
 `;
 
@@ -12,11 +12,12 @@ export const ContentHeader = styled.div`
   align-items: center;
   position: fixed;
   top: 0;
-  width: 600px;
+  width: 560px;
   height: 40px;
   padding: 24px 16px;
   background-color: rgba(21, 32, 43, 0.87);
   backdrop-filter: blur(5px);
+  z-index: 2;
 
   h2 {
     font-size: 20px;

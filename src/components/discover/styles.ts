@@ -7,16 +7,38 @@ export const Discover = styled.div`
   border-left: 1px solid rgba(229, 231, 235, 0.23);
   padding-top: 8px;
   padding-left: 16px;
+`;
+
+export const SearchContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  i {
+    position: absolute;
+    left: 10px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+  }
 
   input {
     background-color: rgb(32, 41, 58);
     border: none;
     border-radius: 20px;
-    padding: 10px;
+    padding: 10px 10px 10px 32px;
+    width: 100%;
+    font-size: 16px;
+    color: #fff;
 
     &::placeholder {
       color: #6b7280;
       font-size: 16px;
+      font-weight: 500;
+    }
+
+    &:focus {
+      outline: none;
     }
   }
 `;

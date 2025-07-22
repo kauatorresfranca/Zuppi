@@ -8,19 +8,20 @@ export const SideBar = styled.div`
   padding-left: 48px;
   padding-right: 12px;
   border-right: 1px solid rgba(229, 231, 235, 0.23);
+  position: fixed;
+  top: 0;
+  left: calc(50% - 600px);
+  z-index: 1000;
 
-  h1 {
-    display: flex;
-
-    i {
-      color: #1d9bf0;
-    }
+  .logo {
+    color: #1d9bf0;
   }
 `;
 
 export const MenuList = styled.ul`
   display: flex;
   flex-direction: column;
+  gap: 10px;
   width: 100%;
   list-style: none;
 `;
@@ -29,12 +30,10 @@ export const MenuItem = styled.li`
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 40px;
   width: 100%;
-  padding: 4px 0 4px 6px;
+  padding: 8px 0 8px 6px;
   border-radius: 20px;
   color: #fff;
-  margin-bottom: 6px;
   transition: 0.3s ease;
 
   &:hover {
@@ -48,6 +47,7 @@ export const MenuItem = styled.li`
   }
 
   h4 {
-    font-weight: 500;
+    color: #e5e7eb;
+    font-weight: 600;
   }
 `;

@@ -4,7 +4,10 @@ import * as S from "./styles";
 const Discover = () => {
   return (
     <S.Discover>
-      <input type="text" placeholder="Search Zuppi" />
+      <S.SearchContainer>
+        <i className="ri-search-line"></i>
+        <input type="text" placeholder="Search Zuppi" />
+      </S.SearchContainer>
       <S.Subscribe>
         <h3>Subscribe to Premium</h3>
         <p>
