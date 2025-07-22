@@ -23,6 +23,13 @@ export const PostData = styled.div`
   display: flex;
   padding-bottom: 16px;
 
+  i {
+    font-size: 18px;
+    padding: 16px;
+    background-color: #e5e7eb;
+    border-radius: 50%;
+  }
+
   .description {
     font-size: 16px;
     color: #e5e7eb;
@@ -54,6 +61,7 @@ export const PostActionsList = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-left: 64px;
 `;
 
 export const PostActionItem = styled.div`

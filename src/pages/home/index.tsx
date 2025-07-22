@@ -8,6 +8,17 @@ const Home = () => {
   const [modalLoginIsOpen, setModalLoginIsOpen] = useState(false);
   const [modalCriarIsOpen, setModalCriarIsOpen] = useState(false);
 
+  // Função para alternar entre modais
+  const toggleModals = (openModal: "login" | "criar") => {
+    if (openModal === "login") {
+      setModalCriarIsOpen(false);
+      setModalLoginIsOpen(true);
+    } else {
+      setModalLoginIsOpen(false);
+      setModalCriarIsOpen(true);
+    }
+  };
+
   return (
     <>
       <S.Container>
@@ -52,10 +63,11 @@ const Home = () => {
             <input type="text" placeholder="Senha" />
             <input type="text" placeholder="Confirmar senha" />
           </S.InputGroup>
-          <p>
-            Já tem uma conta ? <span>Faça login</span>
-          </p>
           <Button variant="primary">Criar Conta</Button>
+          <p>
+            Já tem uma conta?{" "}
+            <span onClick={() => toggleModals("login")}>Faça login</span>
+          </p>
         </form>
       </Modal>
 
@@ -71,10 +83,11 @@ const Home = () => {
             <input type="text" placeholder="Email" />
             <input type="text" placeholder="Senha" />
           </S.InputGroup>
-          <p>
-            Ainda não tem uma conta ? <span>Criar uma conta</span>
-          </p>
           <Button variant="primary">Entrar</Button>
+          <p>
+            Ainda não tem uma conta?{" "}
+            <span onClick={() => toggleModals("criar")}>Criar uma conta</span>
+          </p>
         </form>
       </Modal>
     </>

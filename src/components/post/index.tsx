@@ -1,17 +1,23 @@
 import * as S from "./styles";
 
-const Post = () => {
+type Props = {
+  children: React.ReactNode;
+  username: string;
+  userid: string;
+};
+
+const Post = ({ children, username, userid }: Props) => {
   return (
     <S.Container>
       <S.PostData>
         <i className="ri-user-fill"></i>
         <S.PostDataContent>
           <S.PostUser>
-            <h2>User</h2>
-            <p>@user872</p>
+            <h2>{username}</h2>
+            <p>@{userid}</p>
             <p>23:48</p>
           </S.PostUser>
-          <p className="description">Qual o maior time de alagoas ?</p>
+          <p className="description">{children}</p>
         </S.PostDataContent>
       </S.PostData>
       <S.PostActionsList>
