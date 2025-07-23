@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { breakpoints } from "../../../styles";
 
 export const Content = styled.div`
   position: relative;
@@ -23,6 +24,10 @@ export const ContentHeader = styled.div`
     font-size: 20px;
     font-weight: 600;
     color: #fff;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    left: 66px;
   }
 `;
 

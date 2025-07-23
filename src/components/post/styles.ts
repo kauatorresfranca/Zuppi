@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { breakpoints } from "../../../styles";
 
 export const Container = styled.div`
   position: relative;
@@ -31,8 +32,12 @@ export const PostData = styled.div`
   }
 
   .description {
-    font-size: 16px;
+    font-size: 14px;
     color: #e5e7eb;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    padding-bottom: 12px;
   }
 `;
 
@@ -43,17 +48,21 @@ export const PostDataContent = styled.div`
 export const PostUser = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding-bottom: 16px;
 
   h2 {
-    font-size: 16px;
+    font-size: 14px;
     color: #e5e7eb;
   }
 
   p {
     color: #6b7280;
-    font-size: 14px;
+    font-size: 12px;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    padding-bottom: 12px;
   }
 `;
 

@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { breakpoints } from "../../../styles";
 
 export const SideBar = styled.div`
   width: 300px;
@@ -15,6 +16,22 @@ export const SideBar = styled.div`
 
   .logo {
     color: #1d9bf0;
+    padding: 0 16px;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    width: auto;
+    left: 0;
+    padding-left: 0px;
+    padding-right: 0px;
+
+    .logo {
+    }
+
+    button {
+      width: 20px;
+      margin: 0 auto;
+    }
   }
 `;
 
@@ -24,6 +41,10 @@ export const MenuList = styled.ul`
   gap: 10px;
   width: 100%;
   list-style: none;
+
+  @media (max-width: ${breakpoints.tablet}) {
+    padding-top: 10px;
+  }
 `;
 
 export const MenuItem = styled.li`
@@ -49,5 +70,13 @@ export const MenuItem = styled.li`
   h4 {
     color: #e5e7eb;
     font-weight: 600;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    padding: 0 16px;
+
+    h4 {
+      display: none;
+    }
   }
 `;

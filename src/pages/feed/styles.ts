@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { breakpoints } from "../../../styles";
 
 export const Background = styled.div`
   background-color: #15202b;
@@ -11,4 +12,8 @@ export const Container = styled.div`
   margin: 0 auto; /* Centraliza o contêiner horizontalmente */
   padding-left: 300px; /* Compensa a largura da sidebar fixa */
   gap: 16px; /* Opcional: adiciona espaço entre Content e Discover */
+
+  @media (max-width: ${breakpoints.tablet}) {
+    padding-left: 66px;
+  }
 `;

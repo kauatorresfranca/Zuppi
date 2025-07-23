@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { breakpoints } from "../../../styles";
 
 export const Discover = styled.div`
   display: flex;
@@ -7,6 +8,10 @@ export const Discover = styled.div`
   border-left: 1px solid rgba(229, 231, 235, 0.23);
   padding-top: 8px;
   padding-left: 16px;
+
+  @media (max-width: ${breakpoints.tablet}) {
+    display: none;
+  }
 `;
 
 export const SearchContainer = styled.div`
