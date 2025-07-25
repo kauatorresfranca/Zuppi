@@ -1,7 +1,29 @@
 import Button from "../button";
 import * as S from "./styles";
+import useApi from "../../hooks/useApi";
 
 const Discover = () => {
+  const {
+    data: suggestions,
+    loading,
+    error,
+  } = useApi<{ suggestions: { id: number; username: string }[] }>(
+    "suggestions/"
+  );
+
+  if (loading)
+    return (
+      <S.Discover>
+        <p>Carregando...</p>
+      </S.Discover>
+    );
+  if (error)
+    return (
+      <S.Discover>
+        <p>Erro: {error}</p>
+      </S.Discover>
+    );
+
   return (
     <S.Discover>
       <S.SearchContainer>
@@ -51,56 +73,19 @@ const Discover = () => {
       <S.ToFollow>
         <h2>Who to follow</h2>
         <S.ToFollowList>
-          <S.ToFollowItem>
-            <S.ToFollowItemInfo>
-              <i className="ri-user-fill"></i>
-              <S.ToFollowItemName>
-                <h3>teste</h3>
-                <p>teste</p>
-              </S.ToFollowItemName>
-            </S.ToFollowItemInfo>
-            <Button variant="primary">Follow</Button>
-          </S.ToFollowItem>
-          <S.ToFollowItem>
-            <S.ToFollowItemInfo>
-              <i className="ri-user-fill"></i>
-              <S.ToFollowItemName>
-                <h3>teste</h3>
-                <p>teste</p>
-              </S.ToFollowItemName>
-            </S.ToFollowItemInfo>
-            <Button variant="primary">Follow</Button>
-          </S.ToFollowItem>
-          <S.ToFollowItem>
-            <S.ToFollowItemInfo>
-              <i className="ri-user-fill"></i>
-              <S.ToFollowItemName>
-                <h3>teste</h3>
-                <p>teste</p>
-              </S.ToFollowItemName>
-            </S.ToFollowItemInfo>
-            <Button variant="primary">Follow</Button>
-          </S.ToFollowItem>
-          <S.ToFollowItem>
-            <S.ToFollowItemInfo>
-              <i className="ri-user-fill"></i>
-              <S.ToFollowItemName>
-                <h3>teste</h3>
-                <p>teste</p>
-              </S.ToFollowItemName>
-            </S.ToFollowItemInfo>
-            <Button variant="primary">Follow</Button>
-          </S.ToFollowItem>
-          <S.ToFollowItem>
-            <S.ToFollowItemInfo>
-              <i className="ri-user-fill"></i>
-              <S.ToFollowItemName>
-                <h3>teste</h3>
-                <p>teste</p>
-              </S.ToFollowItemName>
-            </S.ToFollowItemInfo>
-            <Button variant="primary">Follow</Button>
-          </S.ToFollowItem>
+          {suggestions &&
+            suggestions.suggestions.map((user) => (
+              <S.ToFollowItem key={user.id}>
+                <S.ToFollowItemInfo>
+                  <i className="ri-user-fill"></i>
+                  <S.ToFollowItemName>
+                    <h3>{user.username}</h3>
+                    <p>@{user.username}</p>
+                  </S.ToFollowItemName>
+                </S.ToFollowItemInfo>
+                <Button variant="primary">Follow</Button>
+              </S.ToFollowItem>
+            ))}
         </S.ToFollowList>
       </S.ToFollow>
     </S.Discover>

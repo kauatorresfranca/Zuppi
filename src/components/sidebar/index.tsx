@@ -1,14 +1,19 @@
 import Button from "../button";
 import * as S from "./styles";
 
-const SideBar = () => {
+// Define props interface for SideBar
+interface SideBarProps {
+  onContentChange: (content: "feed" | "profile") => void;
+}
+
+const SideBar = ({ onContentChange }: SideBarProps) => {
   return (
     <S.SideBar>
       <h1>
         <i className="ri-twitter-fill logo"></i>
       </h1>
       <S.MenuList>
-        <S.MenuItem>
+        <S.MenuItem onClick={() => onContentChange("feed")}>
           <i className="ri-home-4-fill"></i>
           <h4>Home</h4>
         </S.MenuItem>
@@ -18,7 +23,7 @@ const SideBar = () => {
         </S.MenuItem>
         <S.MenuItem>
           <i className="ri-notification-2-fill"></i>
-          <h4>notifications</h4>
+          <h4>Notifications</h4>
         </S.MenuItem>
         <S.MenuItem>
           <i className="ri-mail-fill"></i>
@@ -36,7 +41,7 @@ const SideBar = () => {
           <i className="ri-twitter-fill"></i>
           <h4>Premium</h4>
         </S.MenuItem>
-        <S.MenuItem>
+        <S.MenuItem onClick={() => onContentChange("profile")}>
           <i className="ri-user-fill"></i>
           <h4>Profile</h4>
         </S.MenuItem>
