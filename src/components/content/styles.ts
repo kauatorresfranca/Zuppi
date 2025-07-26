@@ -3,9 +3,14 @@ import { breakpoints } from "../../../styles";
 
 export const Content = styled.div`
   position: relative;
-  z-index: 10000;
+  z-index: 100;
   padding-top: 48px;
   width: 600px;
+
+  @media (max-width: ${breakpoints.tablet}) {
+    width: 100%;
+    padding: 8px;
+  }
 `;
 
 export const ContentHeader = styled.div`
@@ -18,7 +23,7 @@ export const ContentHeader = styled.div`
   padding: 24px 16px;
   background-color: rgba(21, 32, 43, 0.87);
   backdrop-filter: blur(5px);
-  z-index: 2;
+  z-index: 2000;
 
   h2 {
     font-size: 20px;
@@ -58,6 +63,7 @@ export const NewPostTools = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: 8px;
 
   button {
     width: 80px;
@@ -77,4 +83,10 @@ export const IconList = styled.div`
       cursor: pointer;
     }
   }
+`;
+
+export const ErrorMessage = styled.p`
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-top: 8px;
 `;

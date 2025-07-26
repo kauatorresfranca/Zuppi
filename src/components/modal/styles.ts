@@ -10,7 +10,7 @@ export const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 10000;
 `;
 
 export const Container = styled.div`
@@ -20,6 +20,7 @@ export const Container = styled.div`
   border-radius: 8px;
   max-width: 500px;
   width: 100%;
+  pointer-events: auto;
 
   form {
     display: flex;
@@ -44,9 +45,11 @@ export const Container = styled.div`
     top: 24px;
     right: 24px;
     font-size: 22px;
+    color: #000;
+    cursor: pointer;
 
     &:hover {
-      cursor: pointer;
+      color: #666;
     }
   }
 `;

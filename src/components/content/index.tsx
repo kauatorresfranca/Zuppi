@@ -2,7 +2,8 @@ import Button from "../button";
 import Post from "../post";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
-import { api } from "../../api"; // Importe a API aqui
+import { api } from "../../api";
+import { useState } from "react";
 
 const Content = () => {
   const {
@@ -14,14 +15,30 @@ const Content = () => {
     posts: { id: number; author: string; text: string; likes_count: number }[];
   }>("feed/");
 
+  const [isPosting, setIsPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
+
   const handlePostCreate = async (text: string) => {
-    await api.post("posts/create/", { text }); // Passa o data como segundo argumento
-    refetch();
+    if (!text) return;
+    setIsPosting(true);
+    setPostError(null);
+    try {
+      await api.post("posts/create/", { text });
+      refetch();
+    } catch (err) {
+      setPostError("Erro ao criar post");
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const handleLike = async (postId: number) => {
-    await api.post(`posts/${postId}/like/`, {}); // Passa um objeto vazio como data, pois o back-end não exige corpo
-    refetch();
+    try {
+      await api.post(`posts/${postId}/like/`, {});
+      refetch();
+    } catch (err) {
+      console.error("Erro ao curtir post:", err);
+    }
   };
 
   if (loading)
@@ -45,6 +62,7 @@ const Content = () => {
       <S.NewPostField>
         <textarea
           placeholder="What's happening?"
+          disabled={isPosting}
           onKeyPress={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -54,6 +72,7 @@ const Content = () => {
             }
           }}
         />
+        {postError && <S.ErrorMessage>{postError}</S.ErrorMessage>}
         <S.NewPostTools>
           <S.IconList>
             <i className="ri-image-2-fill"></i>
@@ -65,6 +84,7 @@ const Content = () => {
           </S.IconList>
           <Button
             variant="primary"
+            disabled={isPosting}
             onClick={() => {
               const textarea = document.querySelector(
                 "textarea"
@@ -74,7 +94,7 @@ const Content = () => {
               textarea.value = "";
             }}
           >
-            Zuppi
+            {isPosting ? "Enviando..." : "Zuppi"}
           </Button>
         </S.NewPostTools>
       </S.NewPostField>

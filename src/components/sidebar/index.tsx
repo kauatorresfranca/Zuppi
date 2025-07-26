@@ -75,7 +75,10 @@ const SideBar = ({ onContentChange }: SideBarProps) => {
         </S.MenuList>
       </S.SideBar>
 
-      <Modal isOpen={isLogoutModalOpen}>
+      <Modal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+      >
         <h2>Confirmar Logout</h2>
         <i
           className="ri-close-fill"

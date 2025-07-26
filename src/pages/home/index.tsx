@@ -92,7 +92,10 @@ const Home = () => {
         </S.HeroSection>
       </S.Container>
 
-      <Modal isOpen={modalCriarIsOpen}>
+      <Modal
+        isOpen={modalCriarIsOpen}
+        onClose={() => setModalCriarIsOpen(false)}
+      >
         <h2>Criar conta</h2>
         <i
           className="ri-close-fill"
@@ -131,7 +134,10 @@ const Home = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={modalLoginIsOpen}>
+      <Modal
+        isOpen={modalLoginIsOpen}
+        onClose={() => setModalLoginIsOpen(false)}
+      >
         <h2>Entrar na minha conta</h2>
         <i
           className="ri-close-fill"

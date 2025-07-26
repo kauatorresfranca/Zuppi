@@ -3,7 +3,7 @@ import { breakpoints } from "../../../styles";
 
 export const Content = styled.div`
   position: relative;
-  z-index: 10000;
+  z-index: 1000;
   padding: 16px;
   width: 600px;
 
@@ -38,7 +38,7 @@ export const UserInfo = styled.div`
 
 export const UserInfoEditGroup = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 
@@ -122,4 +122,118 @@ export const Metrics = styled.div`
 export const PostsContainer = styled.div`
   border-bottom: 1px solid rgba(229, 231, 235, 0.09);
   padding: 16px 0;
+`;
+
+export const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.09);
+
+  h2 {
+    font-size: 20px;
+    color: #fff;
+  }
+
+  i {
+    font-size: 24px;
+    color: #fff;
+    cursor: pointer;
+  }
+`;
+
+export const ModalContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  color: #fff;
+`;
+
+export const EditProfileLayout = styled.div`
+  display: flex;
+  gap: 16px;
+
+  @media (max-width: ${breakpoints.tablet}) {
+    flex-direction: column;
+  }
+`;
+
+export const ProfilePreview = styled.div`
+  flex: 0 0 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const ProfilePicturePreview = styled.img`
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #1d9bf0;
+`;
+
+export const RemoveButton = styled.button`
+  background-color: #ff4d4f;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #ff1a1a;
+  }
+`;
+
+export const EditForm = styled.div`
+  flex: 1;
+`;
+
+export const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 14px;
+    color: #e5e7eb;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid rgba(229, 231, 235, 0.23);
+    border-radius: 4px;
+    background-color: #15202b;
+    color: #fff;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: #1d9bf0;
+    }
+  }
+
+  textarea {
+    height: 80px;
+    resize: none;
+  }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+export const ErrorMessage = styled.p`
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-top: 8px;
 `;
