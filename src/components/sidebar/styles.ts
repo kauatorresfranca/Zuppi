@@ -80,3 +80,21 @@ export const MenuItem = styled.li`
     }
   }
 `;
+
+export const ModalContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  color: #fff;
+
+  p {
+    font-size: 16px;
+  }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;

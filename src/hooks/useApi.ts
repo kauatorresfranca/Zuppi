@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "../api";
 
 interface ApiResponse<T> {
-  data: T; // Tipo genérico T, que pode ser um array ou objeto
+  data: T;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -20,8 +20,9 @@ const useApi = <T>(
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await api.get<T>(endpoint); // Especifica o tipo T
-        setData(response);
+        const response = await api.get<T>(endpoint);
+        setData(response.data);
+        setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar dados");
       } finally {
@@ -35,8 +36,9 @@ const useApi = <T>(
   const refetch = async () => {
     try {
       setLoading(true);
-      const response = await api.get<T>(endpoint); // Especifica o tipo T
-      setData(response);
+      const response = await api.get<T>(endpoint);
+      setData(response.data);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao recarregar dados");
     } finally {

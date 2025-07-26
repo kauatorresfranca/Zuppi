@@ -3,14 +3,19 @@ import logo from "../../assets/images/z.png";
 import Button from "../../components/button";
 import { useState } from "react";
 import Modal from "../../components/modal";
-import { useNavigate } from "react-router-dom"; // Se usar React Router
+import { useNavigate } from "react-router-dom";
+import { api } from "../../api";
 
 const Home = () => {
   const [modalLoginIsOpen, setModalLoginIsOpen] = useState(false);
   const [modalCriarIsOpen, setModalCriarIsOpen] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const toggleModals = (openModal: "login" | "criar") => {
+    setLoginError(null);
+    setRegisterError(null);
     if (openModal === "login") {
       setModalCriarIsOpen(false);
       setModalLoginIsOpen(true);
@@ -20,14 +25,43 @@ const Home = () => {
     }
   };
 
-  const handleLogin = () => {
-    // Lógica de login futura com API
-    navigate("/feed"); // Redireciona para o feed após login (ajuste a rota)
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const username = (form.elements.namedItem("username") as HTMLInputElement)
+      .value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement)
+      .value;
+    try {
+      await api.post("/login/", { username, password });
+      navigate("/feed");
+    } catch (error: any) {
+      setLoginError(error.message || "Erro ao fazer login");
+    }
   };
 
-  const handleRegister = () => {
-    // Lógica de registro futura com API
-    navigate("/feed"); // Redireciona para o feed após registro
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const username = (form.elements.namedItem("username") as HTMLInputElement)
+      .value;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement)
+      .value;
+    const confirmPassword = (
+      form.elements.namedItem("confirmPassword") as HTMLInputElement
+    ).value;
+
+    if (password !== confirmPassword) {
+      setRegisterError("As senhas não coincidem");
+      return;
+    }
+    try {
+      await api.post("/register/", { username, email, password });
+      navigate("/feed");
+    } catch (error: any) {
+      setRegisterError(error.message || "Erro ao criar conta");
+    }
   };
 
   return (
@@ -64,14 +98,30 @@ const Home = () => {
           className="ri-close-fill"
           onClick={() => setModalCriarIsOpen(false)}
         ></i>
-        <form>
+        <form onSubmit={handleRegister}>
           <S.InputGroup>
-            <input type="text" placeholder="Nome" />
-            <input type="text" placeholder="Email" />
-            <input type="text" placeholder="Senha" />
-            <input type="text" placeholder="Confirmar senha" />
+            <input
+              type="text"
+              name="username"
+              placeholder="Nome de usuário"
+              required
+            />
+            <input type="email" name="email" placeholder="Email" required />
+            <input
+              type="password"
+              name="password"
+              placeholder="Senha"
+              required
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirmar senha"
+              required
+            />
           </S.InputGroup>
-          <Button variant="primary" onClick={handleRegister}>
+          {registerError && <S.ErrorMessage>{registerError}</S.ErrorMessage>}
+          <Button variant="primary" type="submit">
             Criar Conta
           </Button>
           <p>
@@ -87,12 +137,23 @@ const Home = () => {
           className="ri-close-fill"
           onClick={() => setModalLoginIsOpen(false)}
         ></i>
-        <form>
+        <form onSubmit={handleLogin}>
           <S.InputGroup>
-            <input type="text" placeholder="Email" />
-            <input type="text" placeholder="Senha" />
+            <input
+              type="text"
+              name="username"
+              placeholder="Nome de usuário"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Senha"
+              required
+            />
           </S.InputGroup>
-          <Button variant="primary" onClick={handleLogin}>
+          {loginError && <S.ErrorMessage>{loginError}</S.ErrorMessage>}
+          <Button variant="primary" type="submit">
             Entrar
           </Button>
           <p>

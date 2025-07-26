@@ -1,25 +1,32 @@
+import axios from "axios";
+
 const BASE_URL = "http://localhost:8000/api/";
 
-export const api = {
-  get: async <T>(endpoint: string): Promise<T> => {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) throw new Error("Erro na requisição");
-    return response.json();
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
   },
-  post: async <T>(endpoint: string, data: any): Promise<T> => {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Erro na requisição");
-    return response.json();
-  },
+});
+
+// Função para obter o CSRF token
+const getCsrfToken = async () => {
+  const response = await fetch("http://localhost:8000/api/get_csrf_token/", {
+    method: "GET",
+    credentials: "include",
+  });
+  const data = await response.json();
+  return data.csrfToken;
 };
+
+// Intercepta requisições POST para incluir o CSRF token
+api.interceptors.request.use(async (config) => {
+  if (config.method?.toLowerCase() === "post") {
+    const csrfToken = await getCsrfToken();
+    config.headers["X-CSRFToken"] = csrfToken;
+  }
+  return config;
+});
+
+export { api };

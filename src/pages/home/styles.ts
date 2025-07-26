@@ -55,3 +55,9 @@ export const InputGroup = styled.div`
     }
   }
 `;
+
+export const ErrorMessage = styled.p`
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-top: 8px;
+`;
