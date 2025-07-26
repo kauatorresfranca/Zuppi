@@ -1,26 +1,65 @@
 import Button from "../button";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
+import { useState, useEffect } from "react";
+import { api } from "../../api";
 
 const Discover = () => {
   const {
     data: suggestions,
-    loading,
-    error,
+    loading: suggestionsLoading,
+    error: suggestionsError,
+    refetch: refetchSuggestions,
   } = useApi<{ suggestions: { id: number; username: string }[] }>(
     "suggestions/"
   );
 
-  if (loading)
+  const {
+    data: profileData,
+    loading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile,
+  } = useApi<{
+    following: number[];
+  }>("profile/", { following: [] });
+
+  const [isFollowing, setIsFollowing] = useState<number[]>(
+    profileData?.following || []
+  );
+
+  useEffect(() => {
+    setIsFollowing(profileData?.following || []);
+  }, [profileData]);
+
+  const toggleFollow = async (userId: number) => {
+    try {
+      const isFollowingUser = isFollowing.includes(userId);
+      if (isFollowingUser) {
+        await api.delete(`/follow/${userId}/`);
+        setIsFollowing(isFollowing.filter((id) => id !== userId));
+        console.log(`Deixou de seguir usuário ${userId}`);
+      } else {
+        await api.post(`/follow/${userId}/`, {});
+        setIsFollowing([...isFollowing, userId]);
+        console.log(`Seguiu usuário ${userId}`);
+      }
+      await refetchProfile();
+      await refetchSuggestions();
+    } catch (err) {
+      console.error("Erro ao seguir/deixar de seguir:", err);
+    }
+  };
+
+  if (suggestionsLoading || profileLoading)
     return (
       <S.Discover>
         <p>Carregando...</p>
       </S.Discover>
     );
-  if (error)
+  if (suggestionsError || profileError)
     return (
       <S.Discover>
-        <p>Erro: {error}</p>
+        <p>Erro: {suggestionsError || profileError}</p>
       </S.Discover>
     );
 
@@ -83,7 +122,13 @@ const Discover = () => {
                     <p>@{user.username}</p>
                   </S.ToFollowItemName>
                 </S.ToFollowItemInfo>
-                <Button variant="primary">Follow</Button>
+                <Button
+                  variant="primary"
+                  onClick={() => toggleFollow(user.id)}
+                  disabled={false} // Removido disabled para permitir alternância
+                >
+                  {isFollowing.includes(user.id) ? "Following" : "Follow"}
+                </Button>
               </S.ToFollowItem>
             ))}
         </S.ToFollowList>

@@ -73,17 +73,17 @@ export const PostActionsList = styled.div`
   padding-left: 64px;
 `;
 
-export const PostActionItem = styled.div`
+export const PostActionItem = styled.div<{ $isActive?: boolean }>`
   display: flex;
   align-items: center;
   gap: 6px;
 
   i {
-    color: #6b7280;
+    color: ${(props) => (props.$isActive ? "#1d9bf0" : "#6b7280")};
   }
 
   p {
-    color: #6b7280;
+    color: ${(props) => (props.$isActive ? "#1d9bf0" : "#6b7280")};
   }
 
   &:hover {

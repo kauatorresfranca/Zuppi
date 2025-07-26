@@ -3,7 +3,7 @@ import Post from "../post";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
 import { api } from "../../api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Content = () => {
   const {
@@ -12,11 +12,43 @@ const Content = () => {
     error,
     refetch,
   } = useApi<{
-    posts: { id: number; author: string; text: string; likes_count: number }[];
+    posts: {
+      created_at: string | undefined;
+      id: number;
+      author: string;
+      text: string;
+      likes_count: number;
+      reposts_count?: number;
+      comments_count?: number;
+      shares_count?: number;
+    }[];
   }>("feed/");
 
+  const [userActions, setUserActions] = useState<Record<number, string[]>>({});
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserActions = async () => {
+      if (posts) {
+        const actionsMap: Record<number, string[]> = {};
+        for (const post of posts.posts) {
+          try {
+            const response = await api.get(`posts/${post.id}/actions/`, {
+              params: { user: true },
+            });
+            actionsMap[post.id] = response.data.actions.map(
+              (a: { action_type: string }) => a.action_type
+            );
+          } catch (err) {
+            console.error(`Erro ao carregar ações para post ${post.id}:`, err);
+          }
+        }
+        setUserActions(actionsMap);
+      }
+    };
+    fetchUserActions();
+  }, [posts]);
 
   const handlePostCreate = async (text: string) => {
     if (!text) return;
@@ -27,19 +59,41 @@ const Content = () => {
       refetch();
     } catch (err) {
       setPostError("Erro ao criar post");
+      console.error("Erro handlePostCreate:", err);
     } finally {
       setIsPosting(false);
     }
   };
 
-  const handleLike = async (postId: number) => {
+  const toggleAction = async (postId: number, actionType: string) => {
     try {
-      await api.post(`posts/${postId}/like/`, {});
+      const response = await api.get(`posts/${postId}/actions/`, {
+        params: { user: true },
+      });
+      const userActionsForPost = response.data.actions || [];
+      const hasAction = userActionsForPost.some(
+        (a: { action_type: string }) => a.action_type === actionType
+      );
+
+      if (hasAction) {
+        await api.delete(`posts/${postId}/${actionType}/`);
+        console.log(`Removido ${actionType} do post ${postId}`);
+      } else {
+        await api.post(`posts/${postId}/${actionType}/`, {});
+        console.log(`Adicionado ${actionType} ao post ${postId}`);
+      }
       refetch();
+      console.log("Posts após ação:", posts);
     } catch (err) {
-      console.error("Erro ao curtir post:", err);
+      console.error(`Erro ao ${actionType}:`, err);
     }
   };
+
+  const handleLike = async (postId: number) => toggleAction(postId, "like");
+  const handleRepost = async (postId: number) => toggleAction(postId, "repost");
+  const handleComment = async (postId: number) =>
+    toggleAction(postId, "comment");
+  const handleShare = async (postId: number) => toggleAction(postId, "share");
 
   if (loading)
     return (
@@ -105,7 +159,18 @@ const Content = () => {
             username={post.author}
             userid={post.author}
             likes={post.likes_count}
+            reposts={post.reposts_count}
+            comments={post.comments_count}
+            shares={post.shares_count}
+            createdAt={post.created_at}
+            isLiked={userActions[post.id]?.includes("like") || false}
+            isReposted={userActions[post.id]?.includes("repost") || false}
+            isCommented={userActions[post.id]?.includes("comment") || false}
+            isShared={userActions[post.id]?.includes("share") || false}
             onLike={() => handleLike(post.id)}
+            onRepost={() => handleRepost(post.id)}
+            onComment={() => handleComment(post.id)}
+            onShare={() => handleShare(post.id)}
           >
             {post.text}
           </Post>
