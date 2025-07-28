@@ -6,6 +6,7 @@ export const Content = styled.div`
   z-index: 1000;
   padding: 16px;
   width: 600px;
+  margin: 0 auto;
 
   @media (max-width: ${breakpoints.tablet}) {
     width: 100%;
@@ -34,13 +35,6 @@ export const UserInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
-`;
-
-export const UserInfoEditGroup = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
 
   button {
     height: auto;
@@ -49,15 +43,20 @@ export const UserInfoEditGroup = styled.div`
     color: #fff;
     border: 1px solid #fff;
     font-size: 14px;
+    width: 100%;
   }
+`;
+
+export const UserInfoEditGroup = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 
   @media (max-width: ${breakpoints.tablet}) {
-    flex-direction: column;
-    align-items: stretch;
-
-    button {
-      width: 100%;
-    }
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
   }
 `;
 
@@ -128,7 +127,6 @@ export const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
   border-bottom: 1px solid rgba(229, 231, 235, 0.09);
 
   h2 {
@@ -149,11 +147,15 @@ export const ModalContent = styled.div`
   gap: 16px;
   padding: 16px;
   color: #fff;
+  text-align: center;
 `;
 
 export const EditProfileLayout = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 16px;
+  justify-content: center;
+  align-items: center;
 
   @media (max-width: ${breakpoints.tablet}) {
     flex-direction: column;
@@ -168,12 +170,36 @@ export const ProfilePreview = styled.div`
   gap: 8px;
 `;
 
-export const ProfilePicturePreview = styled.img`
+export const ProfilePicturePreview = styled.label`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  object-fit: cover;
   border: 2px solid #1d9bf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+export const ImageInput = styled.input`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 `;
 
 export const RemoveButton = styled.button`
@@ -192,12 +218,16 @@ export const RemoveButton = styled.button`
 
 export const EditForm = styled.div`
   flex: 1;
+  text-align: center;
+  width: 100%;
 `;
 
 export const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
+  width: 100%;
   gap: 8px;
+  align-items: center;
 
   label {
     font-size: 14px;
@@ -208,11 +238,16 @@ export const FormGroup = styled.div`
   textarea {
     width: 100%;
     padding: 8px;
-    border: 1px solid rgba(229, 231, 235, 0.23);
+    margin-bottom: 16px;
+    border: 1px solid #8899a6;
     border-radius: 4px;
-    background-color: #15202b;
+    background-color: transparent;
     color: #fff;
     font-size: 14px;
+
+    &::placeholder {
+      color: #6b7280;
+    }
 
     &:focus {
       outline: none;
@@ -226,14 +261,32 @@ export const FormGroup = styled.div`
   }
 `;
 
+export const ChangePasswordText = styled.span`
+  color: #1d9bf0;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 16px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 export const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
+  justify-content: center;
+  width: 100%;
+
+  button {
+    width: 100%;
+  }
 `;
 
 export const ErrorMessage = styled.p`
   color: #ff4d4f;
   font-size: 14px;
   margin-top: 8px;
+  text-align: center;
 `;

@@ -37,6 +37,29 @@ const Post = ({
   onComment,
   onShare,
 }: Props) => {
+  const formatRelativeTime = (dateStr?: string): string => {
+    if (!dateStr) return "Agora mesmo";
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffSeconds < 60) return "Agora mesmo";
+    if (diffMinutes < 60)
+      return `${diffMinutes} minuto${diffMinutes > 1 ? "s" : ""} atrás`;
+    if (diffHours < 24)
+      return `${diffHours} hora${diffHours > 1 ? "s" : ""} atrás`;
+    if (diffDays < 7) return `${diffDays} dia${diffDays > 1 ? "s" : ""} atrás`;
+    if (diffWeeks < 4)
+      return `${diffWeeks} semana${diffWeeks > 1 ? "s" : ""} atrás`;
+    return `${diffMonths} mês${diffMonths > 1 ? "es" : ""} atrás`;
+  };
+
   return (
     <S.Container>
       <S.PostData>
@@ -45,7 +68,7 @@ const Post = ({
           <S.PostUser>
             <h2>{username}</h2>
             <p>@{userid}</p>
-            <p>{createdAt || "Agora"}</p>
+            <p>{formatRelativeTime(createdAt)}</p>
           </S.PostUser>
           <p className="description">{children}</p>
         </S.PostDataContent>

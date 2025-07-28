@@ -10,6 +10,7 @@ export const Content = styled.div`
   @media (max-width: ${breakpoints.tablet}) {
     width: 100%;
     padding: 8px;
+    padding-top: 40px;
   }
 `;
 

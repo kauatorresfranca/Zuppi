@@ -8,10 +8,7 @@ interface ApiResponse<T> {
   refetch: () => Promise<void>;
 }
 
-const useApi = <T>(
-  endpoint: string,
-  initialData: T = [] as any
-): ApiResponse<T> => {
+const useApi = <T>(endpoint: string, initialData: T): ApiResponse<T> => {
   const [data, setData] = useState<T>(initialData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

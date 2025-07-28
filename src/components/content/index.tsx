@@ -13,7 +13,7 @@ const Content = () => {
     refetch,
   } = useApi<{
     posts: {
-      created_at: string | undefined;
+      created_at?: string;
       id: number;
       author: string;
       text: string;
@@ -22,7 +22,7 @@ const Content = () => {
       comments_count?: number;
       shares_count?: number;
     }[];
-  }>("feed/");
+  }>("feed/", { posts: [] });
 
   const [userActions, setUserActions] = useState<Record<number, string[]>>({});
   const [isPosting, setIsPosting] = useState(false);
@@ -30,13 +30,11 @@ const Content = () => {
 
   useEffect(() => {
     const fetchUserActions = async () => {
-      if (posts) {
+      if (posts && Array.isArray(posts.posts)) {
         const actionsMap: Record<number, string[]> = {};
         for (const post of posts.posts) {
           try {
-            const response = await api.get(`posts/${post.id}/actions/`, {
-              params: { user: true },
-            });
+            const response = await api.get(`posts/${post.id}/actions/`);
             actionsMap[post.id] = response.data.actions.map(
               (a: { action_type: string }) => a.action_type
             );
@@ -45,6 +43,8 @@ const Content = () => {
           }
         }
         setUserActions(actionsMap);
+      } else {
+        console.log("Nenhum post válido para buscar ações:", posts);
       }
     };
     fetchUserActions();
@@ -67,9 +67,7 @@ const Content = () => {
 
   const toggleAction = async (postId: number, actionType: string) => {
     try {
-      const response = await api.get(`posts/${postId}/actions/`, {
-        params: { user: true },
-      });
+      const response = await api.get(`posts/${postId}/actions/`);
       const userActionsForPost = response.data.actions || [];
       const hasAction = userActionsForPost.some(
         (a: { action_type: string }) => a.action_type === actionType
@@ -83,7 +81,6 @@ const Content = () => {
         console.log(`Adicionado ${actionType} ao post ${postId}`);
       }
       refetch();
-      console.log("Posts após ação:", posts);
     } catch (err) {
       console.error(`Erro ao ${actionType}:`, err);
     }
@@ -111,11 +108,11 @@ const Content = () => {
   return (
     <S.Content>
       <S.ContentHeader>
-        <h2>For you</h2>
+        <h2>Para você</h2>
       </S.ContentHeader>
       <S.NewPostField>
         <textarea
-          placeholder="What's happening?"
+          placeholder="O que está acontecendo?"
           disabled={isPosting}
           onKeyPress={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -152,7 +149,7 @@ const Content = () => {
           </Button>
         </S.NewPostTools>
       </S.NewPostField>
-      {posts &&
+      {Array.isArray(posts?.posts) &&
         posts.posts.map((post) => (
           <Post
             key={post.id}
