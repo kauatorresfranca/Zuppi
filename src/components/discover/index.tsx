@@ -11,7 +11,8 @@ const Discover = () => {
     error: suggestionsError,
     refetch: refetchSuggestions,
   } = useApi<{ suggestions: { id: number; username: string }[] }>(
-    "suggestions/"
+    "suggestions/",
+    { suggestions: [] } // Adicionado initialData com valor padrão
   );
 
   const {

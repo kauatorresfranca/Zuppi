@@ -1,6 +1,6 @@
-// Post.tsx
 import * as S from "./styles";
 import placeholderImage from "../../assets/images/placeholder.png";
+import { API_URL } from "../../api"; // Importe API_URL junto com api
 
 type Props = {
   children: React.ReactNode;
@@ -9,8 +9,6 @@ type Props = {
   likes?: number;
   reposts?: number;
   comments?: number;
-  shares?: number;
-  createdAt?: string;
   isLiked?: boolean;
   isReposted?: boolean;
   isCommented?: boolean;
@@ -20,6 +18,8 @@ type Props = {
   onComment?: () => void;
   onShare?: () => void;
   profilePicture?: string;
+  shares?: number; // Garante que 'shares' está na interface Props
+  createdAt?: string; // Garante que 'createdAt' está na interface Props
 };
 
 const Post = ({
@@ -48,7 +48,7 @@ const Post = ({
 
     const now = new Date();
     const date = new Date(dateStr);
-    const diffMs = now.getTime() - date.getTime(); // Used here to satisfy ESLint
+    const diffMs = now.getTime() - date.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);
     const diffMinutes = Math.floor(diffSeconds / 60);
     const diffHours = Math.floor(diffMinutes / 60);
@@ -68,19 +68,17 @@ const Post = ({
     return `${diffMonths} mês${diffMonths !== 1 ? "es" : ""} atrás`;
   };
 
-  const BASE_URL = "http://localhost:8000";
-
   return (
     <S.Container>
       <S.PostData>
         {profilePicture ? (
           <S.ProfilePicture
-            src={`${BASE_URL}${profilePicture}`}
+            src={`${API_URL}${profilePicture}`} // *** CORREÇÃO AQUI ***
             alt={`${username}'s profile`}
             onError={(e) => {
               console.log(
-                "Erro ao carregar imagem:",
-                `${BASE_URL}${profilePicture}`
+                "Erro ao carregar imagem no Post:",
+                `${API_URL}${profilePicture}` // Logando a URL correta em caso de erro
               );
               e.currentTarget.src = placeholderImage;
             }}

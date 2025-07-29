@@ -1,10 +1,10 @@
-import * as S from "./styles";
-import logo from "../../assets/images/z.png";
 import Button from "../../components/button";
+import * as S from "./styles";
 import { useState } from "react";
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api";
+import logo from "../../assets/images/z.png";
 
 const Home = () => {
   const [modalLoginIsOpen, setModalLoginIsOpen] = useState(false);

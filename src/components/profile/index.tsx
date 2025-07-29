@@ -1,4 +1,3 @@
-// Profile.tsx
 import Button from "../button";
 import Post from "../post";
 import * as S from "./styles";
@@ -6,6 +5,13 @@ import useApi from "../../hooks/useApi";
 import { useState, useEffect } from "react";
 import Modal from "../modal";
 import placeholderImage from "../../assets/images/placeholder.png";
+import { api } from "../../api"; // Seu Axios instance
+
+// Importe API_URL do seu arquivo api.ts
+// Certifique-se de que API_URL seja exportada de api.ts ou defina-a aqui também
+const API_URL =
+  (typeof process !== "undefined" && process.env.REACT_APP_API_URL) ||
+  "http://localhost:8000";
 
 const Profile = () => {
   const {
@@ -65,14 +71,12 @@ const Profile = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
-  const BASE_URL = "http://localhost:8000";
-
   useEffect(() => {
-    fetch("http://localhost:8000/api/get_csrf_token/", {
-      method: "GET",
-      credentials: "include",
-    })
-      .then((response) => response.json())
+    // Certifique-se de que a requisição do CSRF token não está pegando uma barra extra
+    // api.get("/get_csrf_token/") já deve resolver para http://localhost:8000/api/get_csrf_token/
+    api
+      .get("/get_csrf_token/", { withCredentials: true })
+      .then((response) => response.data)
       .then((data) => {
         console.log("CSRF token obtido:", data.csrfToken);
         setCsrfToken(data.csrfToken);
@@ -85,9 +89,11 @@ const Profile = () => {
       console.log("Inicializando profileData:", profileData);
       setBio(profileData.bio || "");
       setUsername(profileData.username || "");
+
+      // **Ajuste aqui:** Concatena diretamente com API_URL para imagens
       setPreviewImage(
         profileData.profile_picture
-          ? `${BASE_URL}${profileData.profile_picture}`
+          ? `${API_URL}${profileData.profile_picture}`
           : null
       );
     }
@@ -99,17 +105,17 @@ const Profile = () => {
 
   const handleLike = async (postId: number) => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/posts/${postId}/like/`,
+      const response = await api.post(
+        `posts/${postId}/like/`,
+        {},
         {
-          method: "POST",
           headers: {
             "X-CSRFToken": csrfToken || "",
           },
-          credentials: "include",
+          withCredentials: true,
         }
       );
-      if (!response.ok) throw new Error("Erro ao curtir post");
+      if (response.status !== 200) throw new Error("Erro ao curtir post");
       refetchPosts();
     } catch (err) {
       console.error("Erro ao curtir post:", err);
@@ -143,27 +149,24 @@ const Profile = () => {
         formData.append("remove_profile_picture", "true");
       }
 
-      console.log("Enviando FormData:");
+      console.log("Enviando FormData (detalhado):");
       for (const [key, value] of formData.entries()) {
-        console.log(`${key}: ${value instanceof File ? value.name : value}`);
+        console.log(
+          `${key}: ${value instanceof File ? value.name : value.toString()}`
+        );
       }
 
-      const response = await fetch(
-        "http://localhost:8000/api/profile/update/",
-        {
-          method: "PATCH",
-          headers: {
-            "X-CSRFToken": csrfToken,
-          },
-          credentials: "include",
-          body: formData,
-        }
-      );
+      const response = await api.patch("profile/update/", formData, {
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        withCredentials: true,
+      });
 
-      const responseData = await response.json();
+      const responseData = response.data;
       console.log("Resposta do backend:", responseData);
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(responseData.error || "Erro ao atualizar perfil");
       }
 
@@ -223,7 +226,7 @@ const Profile = () => {
               <S.ProfilePicture
                 src={
                   profileData?.profile_picture
-                    ? `${BASE_URL}${profileData.profile_picture}`
+                    ? `${API_URL}${profileData.profile_picture}` // **Ajuste aqui**
                     : placeholderImage
                 }
                 alt="Perfil"
@@ -272,7 +275,8 @@ const Profile = () => {
                 shares={post.shares_count}
                 createdAt={post.created_at}
                 onLike={() => handleLike(post.id)}
-                profilePicture={profileData?.profile_picture} // Adicionada a prop profilePicture
+                // Verifique aqui: se Post usa profilePicture para o src da imagem, ele também precisará do API_URL
+                profilePicture={profileData?.profile_picture}
               >
                 {post.text}
               </Post>
@@ -299,13 +303,13 @@ const Profile = () => {
                   src={
                     previewImage ||
                     (profileData?.profile_picture
-                      ? `${BASE_URL}${profileData.profile_picture}`
+                      ? `${API_URL}${profileData.profile_picture}` // **Ajuste aqui**
                       : placeholderImage)
                   }
                   alt="Prévia"
                   onError={(e) => {
                     e.currentTarget.src =
-                      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                      "data:image/png;base64,iVBORw0KGgoAAAANSUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
                   }}
                 />
                 <S.ImageInput

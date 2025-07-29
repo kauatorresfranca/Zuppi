@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Verificar se process.env está disponível, caso contrário usar fallback
-const API_URL =
+export const API_URL = // Adicionado 'export' aqui
   (typeof process !== "undefined" && process.env.REACT_APP_API_URL) ||
   "http://localhost:8000";
 
