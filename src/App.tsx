@@ -3,7 +3,7 @@ import { GlobalStyle } from "../styles";
 import Home from "./pages/home";
 import Feed from "./pages/feed";
 import { api } from "./api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type JSX } from "react";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
