@@ -1,4 +1,6 @@
+// Post.tsx
 import * as S from "./styles";
+import placeholderImage from "../../assets/images/placeholder.png";
 
 type Props = {
   children: React.ReactNode;
@@ -17,6 +19,7 @@ type Props = {
   onRepost?: () => void;
   onComment?: () => void;
   onShare?: () => void;
+  profilePicture?: string;
 };
 
 const Post = ({
@@ -36,12 +39,16 @@ const Post = ({
   onRepost,
   onComment,
   onShare,
+  profilePicture,
 }: Props) => {
+  console.log("Recebido profilePicture em Post:", profilePicture); // Log para depuração
+
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
+
     const now = new Date();
     const date = new Date(dateStr);
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = now.getTime() - date.getTime(); // Used here to satisfy ESLint
     const diffSeconds = Math.floor(diffMs / 1000);
     const diffMinutes = Math.floor(diffSeconds / 60);
     const diffHours = Math.floor(diffMinutes / 60);
@@ -51,19 +58,36 @@ const Post = ({
 
     if (diffSeconds < 60) return "Agora mesmo";
     if (diffMinutes < 60)
-      return `${diffMinutes} minuto${diffMinutes > 1 ? "s" : ""} atrás`;
+      return `${diffMinutes} minuto${diffMinutes !== 1 ? "s" : ""} atrás`;
     if (diffHours < 24)
-      return `${diffHours} hora${diffHours > 1 ? "s" : ""} atrás`;
-    if (diffDays < 7) return `${diffDays} dia${diffDays > 1 ? "s" : ""} atrás`;
+      return `${diffHours} hora${diffHours !== 1 ? "s" : ""} atrás`;
+    if (diffDays < 7)
+      return `${diffDays} dia${diffDays !== 1 ? "s" : ""} atrás`;
     if (diffWeeks < 4)
-      return `${diffWeeks} semana${diffWeeks > 1 ? "s" : ""} atrás`;
-    return `${diffMonths} mês${diffMonths > 1 ? "es" : ""} atrás`;
+      return `${diffWeeks} semana${diffWeeks !== 1 ? "s" : ""} atrás`;
+    return `${diffMonths} mês${diffMonths !== 1 ? "es" : ""} atrás`;
   };
+
+  const BASE_URL = "http://localhost:8000";
 
   return (
     <S.Container>
       <S.PostData>
-        <i className="ri-user-fill"></i>
+        {profilePicture ? (
+          <S.ProfilePicture
+            src={`${BASE_URL}${profilePicture}`}
+            alt={`${username}'s profile`}
+            onError={(e) => {
+              console.log(
+                "Erro ao carregar imagem:",
+                `${BASE_URL}${profilePicture}`
+              );
+              e.currentTarget.src = placeholderImage;
+            }}
+          />
+        ) : (
+          <S.ProfilePicture src={placeholderImage} alt="Placeholder" />
+        )}
         <S.PostDataContent>
           <S.PostUser>
             <h2>{username}</h2>

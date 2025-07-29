@@ -3,11 +3,9 @@ import Button from "../button";
 import Post from "../post";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
-import { api } from "../../api";
 import { useState, useEffect } from "react";
 import Modal from "../modal";
 import placeholderImage from "../../assets/images/placeholder.png";
-import axios from "axios";
 
 const Profile = () => {
   const {
@@ -67,14 +65,17 @@ const Profile = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
+  const BASE_URL = "http://localhost:8000";
+
   useEffect(() => {
-    axios
-      .get("http://localhost:8000/api/get_csrf_token/", {
-        withCredentials: true,
-      })
-      .then((response) => {
-        console.log("CSRF token obtido:", response.data.csrfToken);
-        setCsrfToken(response.data.csrfToken);
+    fetch("http://localhost:8000/api/get_csrf_token/", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("CSRF token obtido:", data.csrfToken);
+        setCsrfToken(data.csrfToken);
       })
       .catch((err) => console.error("Erro ao obter CSRF token:", err));
   }, []);
@@ -84,7 +85,11 @@ const Profile = () => {
       console.log("Inicializando profileData:", profileData);
       setBio(profileData.bio || "");
       setUsername(profileData.username || "");
-      setPreviewImage(profileData.profile_picture || null);
+      setPreviewImage(
+        profileData.profile_picture
+          ? `${BASE_URL}${profileData.profile_picture}`
+          : null
+      );
     }
   }, [isEditModalOpen, profileData]);
 
@@ -94,7 +99,17 @@ const Profile = () => {
 
   const handleLike = async (postId: number) => {
     try {
-      await api.post(`posts/${postId}/like/`, {});
+      const response = await fetch(
+        `http://localhost:8000/api/posts/${postId}/like/`,
+        {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken || "",
+          },
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Erro ao curtir post");
       refetchPosts();
     } catch (err) {
       console.error("Erro ao curtir post:", err);
@@ -111,31 +126,47 @@ const Profile = () => {
       if (username.length < 3) {
         throw new Error("O nome de usuário deve ter pelo menos 3 caracteres");
       }
-
-      const payload = {
-        bio: bio || "",
-        username: username,
-        ...(newPassword &&
-          oldPassword && {
-            old_password: oldPassword,
-            new_password: newPassword,
-          }),
-      };
-
-      console.log("Enviando JSON:", payload);
-
       if (!csrfToken) {
         throw new Error("CSRF token não disponível");
       }
 
-      const response = await api.patch("profile/update/", payload, {
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      });
-      console.log("Resposta do backend:", response.data);
+      const formData = new FormData();
+      formData.append("bio", bio || "");
+      formData.append("username", username);
+      if (newPassword && oldPassword) {
+        formData.append("old_password", oldPassword);
+        formData.append("new_password", newPassword);
+      }
+      if (profilePicture) {
+        formData.append("profile_picture", profilePicture);
+      } else if (previewImage === null && profileData?.profile_picture) {
+        formData.append("remove_profile_picture", "true");
+      }
+
+      console.log("Enviando FormData:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}: ${value instanceof File ? value.name : value}`);
+      }
+
+      const response = await fetch(
+        "http://localhost:8000/api/profile/update/",
+        {
+          method: "PATCH",
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          credentials: "include",
+          body: formData,
+        }
+      );
+
+      const responseData = await response.json();
+      console.log("Resposta do backend:", responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar perfil");
+      }
+
       refetch();
       setIsEditModalOpen(false);
       setOldPassword("");
@@ -144,9 +175,8 @@ const Profile = () => {
       setProfilePicture(null);
       setPreviewImage(null);
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.error || err.message || "Erro ao atualizar perfil";
-      console.error("Erro no handleEditSubmit:", err.response?.data || err);
+      const errorMessage = err.message || "Erro ao atualizar perfil";
+      console.error("Erro no handleEditSubmit:", err);
       setEditError(errorMessage);
     } finally {
       setIsEditing(false);
@@ -191,7 +221,11 @@ const Profile = () => {
           <S.UserInfo>
             <S.UserInfoEditGroup>
               <S.ProfilePicture
-                src={profileData?.profile_picture || placeholderImage}
+                src={
+                  profileData?.profile_picture
+                    ? `${BASE_URL}${profileData.profile_picture}`
+                    : placeholderImage
+                }
                 alt="Perfil"
                 onError={(e) => {
                   e.currentTarget.src =
@@ -238,6 +272,7 @@ const Profile = () => {
                 shares={post.shares_count}
                 createdAt={post.created_at}
                 onLike={() => handleLike(post.id)}
+                profilePicture={profileData?.profile_picture} // Adicionada a prop profilePicture
               >
                 {post.text}
               </Post>
@@ -263,8 +298,9 @@ const Profile = () => {
                 <img
                   src={
                     previewImage ||
-                    profileData?.profile_picture ||
-                    placeholderImage
+                    (profileData?.profile_picture
+                      ? `${BASE_URL}${profileData.profile_picture}`
+                      : placeholderImage)
                   }
                   alt="Prévia"
                   onError={(e) => {
@@ -278,7 +314,7 @@ const Profile = () => {
                   onChange={handleImageChange}
                 />
               </S.ProfilePicturePreview>
-              {previewImage && (
+              {(previewImage || profileData?.profile_picture) && (
                 <S.RemoveButton onClick={handleRemoveImage}>
                   Remover Foto
                 </S.RemoveButton>
