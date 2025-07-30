@@ -1,8 +1,9 @@
+// src/api.ts
 import axios from "axios";
 
 // Verificar se process.env está disponível, caso contrário usar fallback
-export const API_URL = // Adicionado 'export' aqui
-  (typeof process !== "undefined" && process.env.REACT_APP_API_URL) ||
+export const API_URL = // Mantenha o 'export' aqui
+  (typeof process !== "undefined" && process.env.VITE_API_URL) || // <-- MUDE ISSO AQUI
   "http://localhost:8000";
 
 const api = axios.create({
