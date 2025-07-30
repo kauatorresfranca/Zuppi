@@ -1,10 +1,11 @@
-// src/api.ts
 import axios from "axios";
 
-// Verificar se process.env está disponível, caso contrário usar fallback
-export const API_URL = // Mantenha o 'export' aqui
-  (typeof process !== "undefined" && process.env.VITE_API_URL) || // <-- MUDE ISSO AQUI
-  "http://localhost:8000";
+// Verificar se import.meta.env está disponível (Vite)
+// E usar o fallback para localhost se VITE_API_URL não estiver definido
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+// Para depuração (temporário, remova depois de confirmar que funciona)
+console.log(">>>> Valor final de API_URL no api.ts:", API_URL);
 
 const api = axios.create({
   baseURL: `${API_URL}/api/`,
