@@ -57,7 +57,15 @@ const Home = () => {
       return;
     }
     try {
-      await api.post("/register/", { username, email, password });
+      await api.post(
+        "/register/",
+        { username, email, password },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       navigate("/feed");
     } catch (error: any) {
       setRegisterError(error.message || "Erro ao criar conta");
