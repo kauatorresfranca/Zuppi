@@ -21,11 +21,8 @@ const fetchCsrfToken = async () => {
       `${API_URL}/api/get_csrf_token/`,
       {
         withCredentials: true,
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+        // Remove os cabeçalhos problemáticos para evitar o erro CORS.
+        // A política de cache padrão é suficiente.
       }
     );
     csrfToken = response.data.csrfToken;
@@ -56,6 +53,7 @@ api.interceptors.request.use(async (config) => {
   await csrfPromise;
 
   if (csrfToken) {
+    // Adiciona o token CSRF apenas ao cabeçalho.
     config.headers["X-CSRFToken"] = csrfToken;
   } else {
     // Se o token não estiver disponível, o pedido irá falhar.
