@@ -28,6 +28,23 @@ const Content = () => {
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
 
+  // Adicionar estado para o token CSRF
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+
+  // Buscar o token CSRF assim que o componente é carregado
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await api.get("/get_csrf_token/");
+        setCsrfToken(response.data.csrfToken);
+        console.log("CSRF token obtido no Content.tsx");
+      } catch (error) {
+        console.error("Falha ao obter o token CSRF no Content.tsx:", error);
+      }
+    };
+    fetchCsrfToken();
+  }, []);
+
   useEffect(() => {
     const fetchUserActions = async () => {
       if (posts && Array.isArray(posts.posts)) {
@@ -55,7 +72,10 @@ const Content = () => {
     setIsPosting(true);
     setPostError(null);
     try {
-      await api.post("posts/create/", { text });
+      console.log("Enviando post com token:", csrfToken);
+      await api.post("posts/create/", { text }, {
+        headers: { "X-CSRFToken": csrfToken || "" },
+      });
       refetch();
     } catch (err) {
       setPostError("Erro ao criar post");
