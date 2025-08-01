@@ -1,6 +1,6 @@
 import Button from "../../components/button";
 import * as S from "./styles";
-import { useState, useEffect } from "react"; // Adicione useEffect
+import { useState, useEffect } from "react";
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api";
@@ -11,14 +11,17 @@ const Home = () => {
   const [modalCriarIsOpen, setModalCriarIsOpen] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null); // Armazenar o token
   const navigate = useNavigate();
 
-  // Adicione useEffect para buscar o CSRF token ao carregar o componente
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        await api.get("/get_csrf_token/");
-        console.log("CSRF token fetched successfully");
+        const response = await api.get("/get_csrf_token/");
+        const token = response.data.csrfToken;
+        setCsrfToken(token);
+        console.log("CSRF token fetched successfully:", token);
+        console.log("Cookies after fetch:", document.cookie);
       } catch (error) {
         console.error("Failed to fetch CSRF token:", error);
       }
@@ -26,29 +29,20 @@ const Home = () => {
     fetchCsrfToken();
   }, []);
 
-  const toggleModals = (openModal: "login" | "criar") => {
-    setLoginError(null);
-    setRegisterError(null);
-    if (openModal === "login") {
-      setModalCriarIsOpen(false);
-      setModalLoginIsOpen(true);
-    } else {
-      setModalLoginIsOpen(false);
-      setModalCriarIsOpen(true);
-    }
-  };
-
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const username = (form.elements.namedItem("username") as HTMLInputElement).value;
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
     try {
-      const response = await api.post("/login/", { username, password });
-      console.log("Login response:", response); // Debug
+      console.log("Cookies before login:", document.cookie);
+      const response = await api.post("/login/", { username, password }, {
+        headers: { "X-CSRFToken": csrfToken || "" } // Usar o token armazenado
+      });
+      console.log("Login response:", response);
       navigate("/feed");
     } catch (error: any) {
-      console.error("Login error:", error); // Debug
+      console.error("Login error:", error);
       setLoginError(error.message || "Erro ao fazer login");
     }
   };
@@ -66,22 +60,36 @@ const Home = () => {
       return;
     }
     try {
+      console.log("Cookies before register:", document.cookie);
       const response = await api.post(
         "/register/",
         { username, email, password },
         {
           headers: {
             "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken || "" // Usar o token armazenado
           },
         }
       );
-      console.log("Register response:", response); // Debug
+      console.log("Register response:", response);
       navigate("/feed");
     } catch (error: any) {
-      console.error("Register error:", error); // Debug
+      console.error("Register error:", error);
       setRegisterError(error.message || "Erro ao criar conta");
     }
   };
+
+  function toggleModals(modal: string): void {
+    if (modal === "login") {
+      setModalCriarIsOpen(false);
+      setModalLoginIsOpen(true);
+      setRegisterError(null);
+    } else if (modal === "criar") {
+      setModalLoginIsOpen(false);
+      setModalCriarIsOpen(true);
+      setLoginError(null);
+    }
+  }
 
   // O restante do código (JSX) permanece igual
   return (
