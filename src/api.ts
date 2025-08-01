@@ -63,7 +63,16 @@ export const initializeApi = async (): Promise<void> => {
 // Este interceptor garante que o token mais recente do cookie seja sempre usado.
 api.interceptors.request.use(async (config) => {
   // Espera que a inicialização esteja completa antes de prosseguir.
-  await initPromise;
+  // O bloco try...catch garante que o aplicativo não irá travar se a Promise
+  // for rejeitada durante a inicialização.
+  try {
+    await initPromise;
+  } catch (err) {
+    // Se a inicialização falhou, não tente continuar.
+    // Lançamos um novo erro para que a aplicação possa reagir.
+    console.error("Interceptador: A inicialização da API falhou. Impedindo o pedido.");
+    return Promise.reject(new Error("API não inicializada."));
+  }
   
   // Obtém o token CSRF diretamente do cookie antes de cada pedido.
   const csrfToken = getCookie("csrftoken");
