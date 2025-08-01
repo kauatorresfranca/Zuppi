@@ -47,9 +47,5 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Removemos a função initializeApi e a dependência de um pedido GET inicial.
-// A aplicação vai simplesmente começar a funcionar assim que o primeiro pedido GET
-// for feito por algum outro componente.
-
-// Exporta a instância da API
+// Exporta a instância da API.
 export { api };
