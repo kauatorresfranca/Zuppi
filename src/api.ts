@@ -10,9 +10,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// A Promise de inicialização para garantir que a API é inicializada apenas uma vez.
-let initPromise: Promise<void> | null = null;
-
 /**
  * Função utilitária para obter o valor de um cookie.
  * @param name O nome do cookie a ser procurado.
@@ -31,49 +28,9 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
-/**
- * Inicializa a API, garantindo que o token CSRF está presente antes de qualquer pedido.
- * Esta função deve ser chamada e esperada no seu `main.tsx`.
- * @returns Uma Promise que resolve quando a API estiver pronta.
- */
-export const initializeApi = async (): Promise<void> => {
-  // Se a inicialização já estiver em andamento, esperamos por ela.
-  if (initPromise) {
-    return initPromise;
-  }
-
-  initPromise = (async () => {
-    try {
-      // Faz um pedido GET simples para forçar o backend a definir o cookie `csrftoken`.
-      // Isto garante que o cookie estará disponível para o interceptor usar,
-      // mesmo para o primeiro pedido de login.
-      await api.get("get_csrf_token/");
-      console.log("Cookie CSRF obtido com sucesso.");
-    } catch (err) {
-      console.error("Falha ao obter o cookie CSRF:", err);
-      // Se a inicialização falhar, rejeitamos a Promise para impedir que a aplicação inicie.
-      throw new Error("Não foi possível inicializar a API.");
-    }
-  })();
-
-  return initPromise;
-};
-
 // Interceptor do Axios para adicionar o token a todos os pedidos que modificam dados.
-// Este interceptor garante que o token mais recente do cookie seja sempre usado.
-api.interceptors.request.use(async (config) => {
-  // Espera que a inicialização esteja completa antes de prosseguir.
-  // O bloco try...catch garante que o aplicativo não irá travar se a Promise
-  // for rejeitada durante a inicialização.
-  try {
-    await initPromise;
-  } catch (err) {
-    // Se a inicialização falhou, não tente continuar.
-    // Lançamos um novo erro para que a aplicação possa reagir.
-    console.error("Interceptador: A inicialização da API falhou. Impedindo o pedido.");
-    return Promise.reject(new Error("API não inicializada."));
-  }
-  
+// Este é o único código necessário para lidar com o CSRF.
+api.interceptors.request.use((config) => {
   // Obtém o token CSRF diretamente do cookie antes de cada pedido.
   const csrfToken = getCookie("csrftoken");
 
@@ -89,6 +46,10 @@ api.interceptors.request.use(async (config) => {
 
   return config;
 });
+
+// Removemos a função initializeApi e a dependência de um pedido GET inicial.
+// A aplicação vai simplesmente começar a funcionar assim que o primeiro pedido GET
+// for feito por algum outro componente.
 
 // Exporta a instância da API
 export { api };
