@@ -5,20 +5,14 @@ import useApi from "../../hooks/useApi";
 import { useState, useEffect } from "react";
 import Modal from "../modal";
 import placeholderImage from "../../assets/images/placeholder.png";
-import { api } from "../../api"; // Seu Axios instance
-
-// Importe API_URL do seu arquivo api.ts
-// Certifique-se de que API_URL seja exportada de api.ts ou defina-a aqui também
-const API_URL =
-  (typeof process !== "undefined" && process.env.REACT_APP_API_URL) ||
-  "http://localhost:8000";
+import { api, API_URL } from "../../api";
 
 const Profile = () => {
   const {
     data: profileData,
     loading: profileLoading,
     error: profileError,
-    refetch,
+    refetch: refetchProfile,
   } = useApi<{
     username: string;
     handle: string;
@@ -72,50 +66,45 @@ const Profile = () => {
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Certifique-se de que a requisição do CSRF token não está pegando uma barra extra
-    // api.get("/get_csrf_token/") já deve resolver para http://localhost:8000/api/get_csrf_token/
-    api
-      .get("/get_csrf_token/", { withCredentials: true })
-      .then((response) => response.data)
-      .then((data) => {
-        console.log("CSRF token obtido:", data.csrfToken);
-        setCsrfToken(data.csrfToken);
-      })
-      .catch((err) => console.error("Erro ao obter CSRF token:", err));
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await api.get("/get_csrf_token/", { withCredentials: true });
+        setCsrfToken(response.data.csrfToken);
+      } catch (err) {
+        console.error("Erro ao obter CSRF token:", err);
+      }
+    };
+    fetchCsrfToken();
   }, []);
 
   useEffect(() => {
     if (profileData && !isEditModalOpen) {
-      console.log("Inicializando profileData:", profileData);
       setBio(profileData.bio || "");
       setUsername(profileData.username || "");
-
-      // **Ajuste aqui:** Concatena diretamente com API_URL para imagens
       setPreviewImage(
-        profileData.profile_picture
-          ? `${API_URL}${profileData.profile_picture}`
-          : null
+        profileData.profile_picture ? `${API_URL}${profileData.profile_picture}` : null
       );
     }
   }, [isEditModalOpen, profileData]);
 
-  useEffect(() => {
-    console.log("Fetched postsData:", postsData);
-  }, [postsData]);
-
   const handleLike = async (postId: number) => {
     try {
+      if (!csrfToken) {
+        throw new Error("CSRF token não disponível. Não é possível curtir.");
+      }
       const response = await api.post(
         `posts/${postId}/like/`,
         {},
         {
           headers: {
-            "X-CSRFToken": csrfToken || "",
+            "X-CSRFToken": csrfToken,
           },
           withCredentials: true,
         }
       );
-      if (response.status !== 200) throw new Error("Erro ao curtir post");
+      if (response.status !== 200) {
+        throw new Error("Erro ao curtir post");
+      }
       refetchPosts();
     } catch (err) {
       console.error("Erro ao curtir post:", err);
@@ -126,14 +115,11 @@ const Profile = () => {
     setIsEditing(true);
     setEditError(null);
     try {
-      if (!username) {
-        throw new Error("Nome de usuário é obrigatório");
-      }
-      if (username.length < 3) {
-        throw new Error("O nome de usuário deve ter pelo menos 3 caracteres");
+      if (!username || username.length < 3) {
+        throw new Error("O nome de utilizador deve ter pelo menos 3 caracteres.");
       }
       if (!csrfToken) {
-        throw new Error("CSRF token não disponível");
+        throw new Error("CSRF token não disponível.");
       }
 
       const formData = new FormData();
@@ -149,13 +135,6 @@ const Profile = () => {
         formData.append("remove_profile_picture", "true");
       }
 
-      console.log("Enviando FormData (detalhado):");
-      for (const [key, value] of formData.entries()) {
-        console.log(
-          `${key}: ${value instanceof File ? value.name : value.toString()}`
-        );
-      }
-
       const response = await api.patch("profile/update/", formData, {
         headers: {
           "X-CSRFToken": csrfToken,
@@ -163,14 +142,11 @@ const Profile = () => {
         withCredentials: true,
       });
 
-      const responseData = response.data;
-      console.log("Resposta do backend:", responseData);
-
       if (response.status !== 200) {
-        throw new Error(responseData.error || "Erro ao atualizar perfil");
+        throw new Error(response.data.error || "Erro ao atualizar perfil");
       }
 
-      refetch();
+      refetchProfile();
       setIsEditModalOpen(false);
       setOldPassword("");
       setNewPassword("");
@@ -178,8 +154,7 @@ const Profile = () => {
       setProfilePicture(null);
       setPreviewImage(null);
     } catch (err: any) {
-      const errorMessage = err.message || "Erro ao atualizar perfil";
-      console.error("Erro no handleEditSubmit:", err);
+      const errorMessage = err.response?.data?.error || err.message || "Erro ao atualizar perfil";
       setEditError(errorMessage);
     } finally {
       setIsEditing(false);
@@ -189,14 +164,12 @@ const Profile = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      console.log("Imagem selecionada:", file.name, `(${file.size} bytes)`);
       setProfilePicture(file);
       setPreviewImage(URL.createObjectURL(file));
     }
   };
 
   const handleRemoveImage = () => {
-    console.log("Imagem de perfil removida");
     setProfilePicture(null);
     setPreviewImage(null);
   };
@@ -226,20 +199,19 @@ const Profile = () => {
               <S.ProfilePicture
                 src={
                   profileData?.profile_picture
-                    ? `${API_URL}${profileData.profile_picture}` // **Ajuste aqui**
+                    ? `${API_URL}${profileData.profile_picture}`
                     : placeholderImage
                 }
                 alt="Perfil"
                 onError={(e) => {
-                  e.currentTarget.src =
-                    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                  e.currentTarget.src = placeholderImage;
                 }}
               />
               <S.UserDetails>
                 <h2 style={{ color: "#fff" }}>
-                  {profileData?.username || "Usuário"}
+                  {profileData?.username || "Utilizador"}
                 </h2>
-                <S.Handle>@{profileData?.handle || "usuário"}</S.Handle>
+                <S.Handle>@{profileData?.handle || "utilizador"}</S.Handle>
                 <S.Bio>{profileData?.bio || "Nenhuma bio disponível"}</S.Bio>
               </S.UserDetails>
             </S.UserInfoEditGroup>
@@ -275,7 +247,6 @@ const Profile = () => {
                 shares={post.shares_count}
                 createdAt={post.created_at}
                 onLike={() => handleLike(post.id)}
-                // Verifique aqui: se Post usa profilePicture para o src da imagem, ele também precisará do API_URL
                 profilePicture={profileData?.profile_picture}
               >
                 {post.text}
@@ -303,13 +274,12 @@ const Profile = () => {
                   src={
                     previewImage ||
                     (profileData?.profile_picture
-                      ? `${API_URL}${profileData.profile_picture}` // **Ajuste aqui**
+                      ? `${API_URL}${profileData.profile_picture}`
                       : placeholderImage)
                   }
                   alt="Prévia"
                   onError={(e) => {
-                    e.currentTarget.src =
-                      "data:image/png;base64,iVBORw0KGgoAAAANSUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                    e.currentTarget.src = placeholderImage;
                   }}
                 />
                 <S.ImageInput
@@ -326,16 +296,13 @@ const Profile = () => {
             </S.ProfilePreview>
             <S.EditForm>
               <S.FormGroup>
-                <label>Nome de Usuário</label>
+                <label>Nome de Utilizador</label>
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => {
-                    console.log("Novo username digitado:", e.target.value);
-                    setUsername(e.target.value);
-                  }}
+                  onChange={(e) => setUsername(e.target.value)}
                   placeholder={
-                    profileData?.username || "Digite seu nome de usuário"
+                    profileData?.username || "Digite o seu nome de utilizador"
                   }
                 />
               </S.FormGroup>
@@ -343,11 +310,8 @@ const Profile = () => {
                 <label>Bio</label>
                 <textarea
                   value={bio}
-                  onChange={(e) => {
-                    console.log("Nova bio digitada:", e.target.value);
-                    setBio(e.target.value);
-                  }}
-                  placeholder={profileData?.bio || "Conte sobre você"}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder={profileData?.bio || "Conte sobre si"}
                 />
               </S.FormGroup>
               {!showPasswordFields ? (
@@ -364,7 +328,7 @@ const Profile = () => {
                       type="password"
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
-                      placeholder="Digite sua senha atual"
+                      placeholder="Digite a sua senha atual"
                     />
                   </S.FormGroup>
                   <S.FormGroup>
@@ -373,7 +337,7 @@ const Profile = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Digite sua nova senha"
+                      placeholder="Digite a sua nova senha"
                     />
                   </S.FormGroup>
                 </>
@@ -391,7 +355,7 @@ const Profile = () => {
                   disabled={isEditing}
                   onClick={handleEditSubmit}
                 >
-                  {isEditing ? "Salvando..." : "Salvar"}
+                  {isEditing ? "A salvar..." : "Salvar"}
                 </Button>
               </S.ButtonGroup>
             </S.EditForm>

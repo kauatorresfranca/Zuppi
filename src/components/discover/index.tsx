@@ -12,7 +12,7 @@ const Discover = () => {
     refetch: refetchSuggestions,
   } = useApi<{ suggestions: { id: number; username: string }[] }>(
     "suggestions/",
-    { suggestions: [] } // Adicionado initialData com valor padrão
+    { suggestions: [] }
   );
 
   const {
@@ -38,11 +38,9 @@ const Discover = () => {
       if (isFollowingUser) {
         await api.delete(`/follow/${userId}/`);
         setIsFollowing(isFollowing.filter((id) => id !== userId));
-        console.log(`Deixou de seguir usuário ${userId}`);
       } else {
         await api.post(`/follow/${userId}/`, {});
         setIsFollowing([...isFollowing, userId]);
-        console.log(`Seguiu usuário ${userId}`);
       }
       await refetchProfile();
       await refetchSuggestions();
@@ -126,7 +124,7 @@ const Discover = () => {
                 <Button
                   variant="primary"
                   onClick={() => toggleFollow(user.id)}
-                  disabled={false} // Removido disabled para permitir alternância
+                  disabled={false}
                 >
                   {isFollowing.includes(user.id) ? "Following" : "Follow"}
                 </Button>

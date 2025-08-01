@@ -1,6 +1,6 @@
 import * as S from "./styles";
 import placeholderImage from "../../assets/images/placeholder.png";
-import { API_URL } from "../../api"; // Importe API_URL junto com api
+import { API_URL } from "../../api";
 
 type Props = {
   children: React.ReactNode;
@@ -18,8 +18,8 @@ type Props = {
   onComment?: () => void;
   onShare?: () => void;
   profilePicture?: string;
-  shares?: number; // Garante que 'shares' está na interface Props
-  createdAt?: string; // Garante que 'createdAt' está na interface Props
+  shares?: number;
+  createdAt?: string;
 };
 
 const Post = ({
@@ -41,11 +41,8 @@ const Post = ({
   onShare,
   profilePicture,
 }: Props) => {
-  console.log("Recebido profilePicture em Post:", profilePicture); // Log para depuração
-
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
-
     const now = new Date();
     const date = new Date(dateStr);
     const diffMs = now.getTime() - date.getTime();
@@ -55,7 +52,6 @@ const Post = ({
     const diffDays = Math.floor(diffHours / 24);
     const diffWeeks = Math.floor(diffDays / 7);
     const diffMonths = Math.floor(diffDays / 30);
-
     if (diffSeconds < 60) return "Agora mesmo";
     if (diffMinutes < 60)
       return `${diffMinutes} minuto${diffMinutes !== 1 ? "s" : ""} atrás`;
@@ -73,13 +69,9 @@ const Post = ({
       <S.PostData>
         {profilePicture ? (
           <S.ProfilePicture
-            src={`${API_URL}${profilePicture}`} // *** CORREÇÃO AQUI ***
+            src={`${API_URL}${profilePicture}`}
             alt={`${username}'s profile`}
             onError={(e) => {
-              console.log(
-                "Erro ao carregar imagem no Post:",
-                `${API_URL}${profilePicture}` // Logando a URL correta em caso de erro
-              );
               e.currentTarget.src = placeholderImage;
             }}
           />
