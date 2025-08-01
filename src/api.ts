@@ -3,20 +3,14 @@ import axios from "axios";
 // Ponto de entrada da API. Usa a variável de ambiente VITE_API_URL ou um fallback.
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Função utilitária para obter o valor de um cookie.
-const getCookie = (name: string): string | null => {
-  const cookieValue = document.cookie
-    .split(";")
-    .find((row) => row.trim().startsWith(name + "="));
-  return cookieValue ? cookieValue.split("=")[1] : null;
-};
-
 // Cria a instância do Axios com o URL base e com a opção de enviar cookies entre domínios.
 const api = axios.create({
   baseURL: `${API_URL}/api/`,
   withCredentials: true,
 });
 
+// Variável para armazenar o token CSRF depois de obtido.
+let csrfToken: string | null = null;
 // Promise para garantir que a API é inicializada apenas uma vez.
 let initPromise: Promise<void> | null = null;
 
@@ -28,30 +22,28 @@ export const initializeApi = async (): Promise<void> => {
   }
 
   // Cria a Promise para inicialização
-  initPromise = new Promise((resolve, reject) => {
-    (async () => {
-      try {
-        // Faz um pedido GET simples para forçar o backend a definir o cookie csrftoken.
-        // A resposta deste endpoint não importa, o que importa é o cookie.
-        await api.get("get_csrf_token/");
-        console.log("Cookie CSRF obtido com sucesso.");
-        resolve();
-      } catch (err) {
-        console.error("Falha ao obter o cookie CSRF:", err);
-        reject(err);
-      }
-    })();
-  });
+  initPromise = (async () => {
+    try {
+      // Faz um pedido GET para obter o token explicitamente.
+      const response = await api.get<{ csrfToken: string }>("get_csrf_token/");
+      csrfToken = response.data.csrfToken;
+      console.log("Token CSRF obtido com sucesso:", csrfToken);
+    } catch (err) {
+      console.error("Falha ao obter o token CSRF:", err);
+      // Lança o erro para que a aplicação não seja renderizada.
+      throw new Error("Não foi possível obter o token CSRF.");
+    }
+  })();
 
   return initPromise;
 };
 
 // Interceptor do Axios para adicionar o token a todos os pedidos que modificam dados.
-api.interceptors.request.use((config) => {
-  // Obtém o token CSRF diretamente do cookie antes de cada pedido.
-  const csrfToken = getCookie("csrftoken");
+api.interceptors.request.use(async (config) => {
+  // Aguarda a inicialização da API para garantir que o token já foi obtido.
+  await initPromise;
 
-  // Adiciona o token CSRF ao cabeçalho para todos os métodos "inseguros" (POST, PUT, DELETE, PATCH).
+  // Adiciona o token CSRF ao cabeçalho para todos os métodos "inseguros".
   if (
     csrfToken &&
     ["POST", "PUT", "DELETE", "PATCH"].includes(
