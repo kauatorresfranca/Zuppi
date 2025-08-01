@@ -1,6 +1,6 @@
 import Button from "../../components/button";
 import * as S from "./styles";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Adicione useEffect
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api";
@@ -12,6 +12,19 @@ const Home = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Adicione useEffect para buscar o CSRF token ao carregar o componente
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        await api.get("/get_csrf_token/");
+        console.log("CSRF token fetched successfully");
+      } catch (error) {
+        console.error("Failed to fetch CSRF token:", error);
+      }
+    };
+    fetchCsrfToken();
+  }, []);
 
   const toggleModals = (openModal: "login" | "criar") => {
     setLoginError(null);
@@ -28,14 +41,14 @@ const Home = () => {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    const username = (form.elements.namedItem("username") as HTMLInputElement)
-      .value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement)
-      .value;
+    const username = (form.elements.namedItem("username") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
     try {
-      await api.post("/login/", { username, password });
+      const response = await api.post("/login/", { username, password });
+      console.log("Login response:", response); // Debug
       navigate("/feed");
     } catch (error: any) {
+      console.error("Login error:", error); // Debug
       setLoginError(error.message || "Erro ao fazer login");
     }
   };
@@ -43,21 +56,17 @@ const Home = () => {
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    const username = (form.elements.namedItem("username") as HTMLInputElement)
-      .value;
+    const username = (form.elements.namedItem("username") as HTMLInputElement).value;
     const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement)
-      .value;
-    const confirmPassword = (
-      form.elements.namedItem("confirmPassword") as HTMLInputElement
-    ).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+    const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement).value;
 
     if (password !== confirmPassword) {
       setRegisterError("As senhas não coincidem");
       return;
     }
     try {
-      await api.post(
+      const response = await api.post(
         "/register/",
         { username, email, password },
         {
@@ -66,12 +75,15 @@ const Home = () => {
           },
         }
       );
+      console.log("Register response:", response); // Debug
       navigate("/feed");
     } catch (error: any) {
+      console.error("Register error:", error); // Debug
       setRegisterError(error.message || "Erro ao criar conta");
     }
   };
 
+  // O restante do código (JSX) permanece igual
   return (
     <>
       <S.Container>
