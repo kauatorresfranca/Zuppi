@@ -86,31 +86,44 @@ const Content = () => {
   };
 
   const toggleAction = async (postId: number, actionType: string) => {
-    try {
-      const response = await api.get(`posts/${postId}/actions/`);
-      const userActionsForPost = response.data.actions || [];
-      const hasAction = userActionsForPost.some(
-        (a: { action_type: string }) => a.action_type === actionType
-      );
+  console.log(`toggleAction called with postId: ${postId}, actionType: ${actionType}`);
+  try {
+    const response = await api.get(`posts/${postId}/actions/`);
+    const userActionsForPost = response.data.actions || [];
+    const hasAction = userActionsForPost.some(
+      (a: { action_type: string }) => a.action_type === actionType
+    );
+    console.log(`hasAction for ${actionType}:`, hasAction);
 
-      if (hasAction) {
-        await api.delete(`posts/${postId}/${actionType}/`);
-        console.log(`Removido ${actionType} do post ${postId}`);
-      } else {
-        await api.post(`posts/${postId}/${actionType}/`, {});
-        console.log(`Adicionado ${actionType} ao post ${postId}`);
-      }
-      refetch();
-    } catch (err) {
-      console.error(`Erro ao ${actionType}:`, err);
+    if (hasAction) {
+      await api.delete(`posts/${postId}/${actionType}/`);
+      console.log(`Removed ${actionType} for post ${postId}`);
+    } else {
+      await api.post(`posts/${postId}/${actionType}/`, {});
+      console.log(`Added ${actionType} for post ${postId}`);
     }
-  };
+    refetch();
+  } catch (err) {
+    console.error(`Error performing ${actionType}:`, err);
+  }
+};
 
-  const handleLike = async (postId: number) => toggleAction(postId, "like");
-  const handleRepost = async (postId: number) => toggleAction(postId, "repost");
-  const handleComment = async (postId: number) =>
-    toggleAction(postId, "comment");
-  const handleShare = async (postId: number) => toggleAction(postId, "share");
+const handleLike = async (postId: number) => {
+  console.log("handleLike called for postId:", postId);
+  await toggleAction(postId, "like");
+};
+const handleRepost = async (postId: number) => {
+  console.log("handleRepost called for postId:", postId);
+  await toggleAction(postId, "repost");
+};
+const handleComment = async (postId: number) => {
+  console.log("handleComment called for postId:", postId);
+  await toggleAction(postId, "comment");
+};
+const handleShare = async (postId: number) => {
+  console.log("handleShare called for postId:", postId);
+  await toggleAction(postId, "share");
+};
 
   if (loading)
     return (

@@ -41,6 +41,8 @@ const Post = ({
   onShare,
   profilePicture,
 }: Props) => {
+  console.log("Post props:", { onLike, onRepost, onComment, onShare });
+
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
     const now = new Date();
@@ -88,19 +90,43 @@ const Post = ({
         </S.PostDataContent>
       </S.PostData>
       <S.PostActionsList>
-        <S.PostActionItem onClick={onComment} $isActive={isCommented}>
+        <S.PostActionItem
+          onClick={() => {
+            console.log("Comment button clicked");
+            onComment?.();
+          }}
+          $isActive={isCommented}
+        >
           <i className="ri-chat-3-fill"></i>
           <p>{comments}</p>
         </S.PostActionItem>
-        <S.PostActionItem onClick={onRepost} $isActive={isReposted}>
+        <S.PostActionItem
+          onClick={() => {
+            console.log("Repost button clicked");
+            onRepost?.();
+          }}
+          $isActive={isReposted}
+        >
           <i className="ri-repeat-fill"></i>
           <p>{reposts}</p>
         </S.PostActionItem>
-        <S.PostActionItem onClick={onLike} $isActive={isLiked}>
+        <S.PostActionItem
+          onClick={() => {
+            console.log("Like button clicked");
+            onLike?.();
+          }}
+          $isActive={isLiked}
+        >
           <i className="ri-heart-3-fill"></i>
           <p>{likes}</p>
         </S.PostActionItem>
-        <S.PostActionItem onClick={onShare} $isActive={isShared}>
+        <S.PostActionItem
+          onClick={() => {
+            console.log("Share button clicked");
+            onShare?.();
+          }}
+          $isActive={isShared}
+        >
           <i className="ri-upload-2-fill"></i>
           <p>{shares}</p>
         </S.PostActionItem>
