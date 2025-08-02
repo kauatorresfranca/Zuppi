@@ -27,6 +27,22 @@ const Discover = () => {
   const [isFollowing, setIsFollowing] = useState<number[]>(
     profileData?.following || []
   );
+  // Add state for CSRF token
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+
+  // Fetch CSRF token on component mount
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await api.get("/get_csrf_token/");
+        setCsrfToken(response.data.csrfToken);
+        console.log("CSRF token obtained in Discover.tsx");
+      } catch (error) {
+        console.error("Failed to fetch CSRF token in Discover.tsx:", error);
+      }
+    };
+    fetchCsrfToken();
+  }, []);
 
   useEffect(() => {
     setIsFollowing(profileData?.following || []);
@@ -36,29 +52,37 @@ const Discover = () => {
     try {
       const isFollowingUser = isFollowing.includes(userId);
       if (isFollowingUser) {
-        await api.delete(`/follow/${userId}/`);
+        await api.delete(`/follow/${userId}/`, {
+          headers: { "X-CSRFToken": csrfToken || "" },
+        });
         setIsFollowing(isFollowing.filter((id) => id !== userId));
       } else {
-        await api.post(`/follow/${userId}/`, {});
+        await api.post(
+          `/follow/${userId}/`,
+          {},
+          {
+            headers: { "X-CSRFToken": csrfToken || "" },
+          }
+        );
         setIsFollowing([...isFollowing, userId]);
       }
       await refetchProfile();
       await refetchSuggestions();
     } catch (err) {
-      console.error("Erro ao seguir/deixar de seguir:", err);
+      console.error("Error following/unfollowing:", err);
     }
   };
 
   if (suggestionsLoading || profileLoading)
     return (
       <S.Discover>
-        <p>Carregando...</p>
+        <p>Loading...</p>
       </S.Discover>
     );
   if (suggestionsError || profileError)
     return (
       <S.Discover>
-        <p>Erro: {suggestionsError || profileError}</p>
+        <p>Error: {suggestionsError || profileError}</p>
       </S.Discover>
     );
 
@@ -71,8 +95,8 @@ const Discover = () => {
       <S.Subscribe>
         <h3>Subscribe to Premium</h3>
         <p>
-          Subscribe to unlock new features and if eligible, receive a share of
-          ads revenue.
+          Subscribe to unlock new features and if eligible, receive a share of ads
+          revenue.
         </p>
         <Button variant="primary">Subscribe</Button>
       </S.Subscribe>
