@@ -93,7 +93,11 @@ const Post = ({
         <S.PostActionItem
           onClick={() => {
             console.log("Comment button clicked");
-            onComment?.();
+            if (!onComment) {
+              console.error("onComment is undefined");
+              return;
+            }
+            onComment();
           }}
           $isActive={isCommented}
         >
@@ -103,9 +107,14 @@ const Post = ({
         <S.PostActionItem
           onClick={() => {
             console.log("Repost button clicked");
-            onRepost?.();
+            if (!onRepost) {
+              console.error("onRepost is undefined");
+              return;
+            }
+            onRepost();
           }}
           $isActive={isReposted}
+          style={!onRepost ? { pointerEvents: "none", opacity: 0.5 } : {}}
         >
           <i className="ri-repeat-fill"></i>
           <p>{reposts}</p>
@@ -113,9 +122,14 @@ const Post = ({
         <S.PostActionItem
           onClick={() => {
             console.log("Like button clicked");
-            onLike?.();
+            if (!onLike) {
+              console.error("onLike is undefined");
+              return;
+            }
+            onLike();
           }}
           $isActive={isLiked}
+          style={!onLike ? { pointerEvents: "none", opacity: 0.5 } : {}}
         >
           <i className="ri-heart-3-fill"></i>
           <p>{likes}</p>
@@ -123,9 +137,14 @@ const Post = ({
         <S.PostActionItem
           onClick={() => {
             console.log("Share button clicked");
-            onShare?.();
+            if (!onShare) {
+              console.error("onShare is undefined");
+              return;
+            }
+            onShare();
           }}
           $isActive={isShared}
+          style={!onShare ? { pointerEvents: "none", opacity: 0.5 } : {}}
         >
           <i className="ri-upload-2-fill"></i>
           <p>{shares}</p>
