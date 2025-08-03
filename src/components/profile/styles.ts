@@ -231,7 +231,7 @@ export const FormGroup = styled.div`
 
   label {
     font-size: 14px;
-    color: #e5e7eb;
+    color: #000000;
   }
 
   input,
@@ -242,7 +242,7 @@ export const FormGroup = styled.div`
     border: 1px solid #8899a6;
     border-radius: 4px;
     background-color: transparent;
-    color: #fff;
+    color: #000000;
     font-size: 14px;
 
     &::placeholder {
