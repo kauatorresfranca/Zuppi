@@ -53,6 +53,7 @@ const Profile = () => {
     }[];
   }>("profile/posts/", { posts: [] });
 
+  const [userActions, setUserActions] = useState<Record<number, string[]>>({});
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [bio, setBio] = useState("");
   const [username, setUsername] = useState("");
@@ -70,6 +71,7 @@ const Profile = () => {
       try {
         const response = await api.get("/get_csrf_token/", { withCredentials: true });
         setCsrfToken(response.data.csrfToken);
+        console.log("CSRF token obtido no Profile.tsx");
       } catch (err) {
         console.error("Erro ao obter CSRF token:", err);
       }
@@ -87,28 +89,82 @@ const Profile = () => {
     }
   }, [isEditModalOpen, profileData]);
 
-  const handleLike = async (postId: number) => {
+  useEffect(() => {
+    const fetchUserActions = async () => {
+      if (postsData && Array.isArray(postsData.posts)) {
+        const actionsMap: Record<number, string[]> = {};
+        for (const post of postsData.posts) {
+          try {
+            const response = await api.get(`posts/${post.id}/actions/`);
+            actionsMap[post.id] = response.data.actions.map(
+              (a: { action_type: string }) => a.action_type
+            );
+          } catch (err) {
+            console.error(`Erro ao carregar ações para post ${post.id}:`, err);
+          }
+        }
+        setUserActions(actionsMap);
+      } else {
+        console.log("Nenhum post válido para buscar ações:", postsData);
+      }
+    };
+    fetchUserActions();
+  }, [postsData]);
+
+  const toggleAction = async (postId: number, actionType: string) => {
+    console.log(`toggleAction called with postId: ${postId}, actionType: ${actionType}`);
     try {
       if (!csrfToken) {
-        throw new Error("CSRF token não disponível. Não é possível curtir.");
+        throw new Error(`CSRF token não disponível. Não é possível executar ${actionType}.`);
       }
-      const response = await api.post(
-        `posts/${postId}/like/`,
-        {},
-        {
-          headers: {
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        }
+      const response = await api.get(`posts/${postId}/actions/`);
+      const userActionsForPost = response.data.actions || [];
+      const hasAction = userActionsForPost.some(
+        (a: { action_type: string }) => a.action_type === actionType
       );
-      if (response.status !== 200) {
-        throw new Error("Erro ao curtir post");
+      console.log(`hasAction for ${actionType}:`, hasAction);
+
+      if (hasAction) {
+        await api.delete(`posts/${postId}/${actionType}/`, {
+          headers: { "X-CSRFToken": csrfToken },
+          withCredentials: true,
+        });
+        console.log(`Removed ${actionType} for post ${postId}`);
+      } else {
+        await api.post(
+          `posts/${postId}/${actionType}/`,
+          {},
+          {
+            headers: { "X-CSRFToken": csrfToken },
+            withCredentials: true,
+          }
+        );
+        console.log(`Added ${actionType} for post ${postId}`);
       }
       refetchPosts();
     } catch (err) {
-      console.error("Erro ao curtir post:", err);
+      console.error(`Erro ao executar ${actionType}:`, err);
     }
+  };
+
+  const handleLike = async (postId: number) => {
+    console.log("handleLike called for postId:", postId);
+    await toggleAction(postId, "like");
+  };
+
+  const handleRepost = async (postId: number) => {
+    console.log("handleRepost called for postId:", postId);
+    await toggleAction(postId, "repost");
+  };
+
+  const handleComment = async (postId: number) => {
+    console.log("handleComment called for postId:", postId);
+    await toggleAction(postId, "comment");
+  };
+
+  const handleShare = async (postId: number) => {
+    console.log("handleShare called for postId:", postId);
+    await toggleAction(postId, "share");
   };
 
   const handleEditSubmit = async () => {
@@ -236,22 +292,38 @@ const Profile = () => {
         </S.ProfileContainer>
         <S.PostsContainer>
           {Array.isArray(postsData?.posts) ? (
-            postsData.posts.map((post) => (
-              <Post
-                key={post.id}
-                username={post.author}
-                userid={post.author}
-                likes={post.likes_count}
-                reposts={post.reposts_count}
-                comments={post.comments_count}
-                shares={post.shares_count}
-                createdAt={post.created_at}
-                onLike={() => handleLike(post.id)}
-                profilePicture={profileData?.profile_picture}
-              >
-                {post.text}
-              </Post>
-            ))
+            postsData.posts.map((post) => {
+              console.log("Passing handlers to Post:", {
+                postId: post.id,
+                onLike: handleLike,
+                onRepost: handleRepost,
+                onComment: handleComment,
+                onShare: handleShare,
+              });
+              return (
+                <Post
+                  key={post.id}
+                  username={post.author}
+                  userid={post.author}
+                  likes={post.likes_count}
+                  reposts={post.reposts_count}
+                  comments={post.comments_count}
+                  shares={post.shares_count}
+                  createdAt={post.created_at}
+                  isLiked={userActions[post.id]?.includes("like") || false}
+                  isReposted={userActions[post.id]?.includes("repost") || false}
+                  isCommented={userActions[post.id]?.includes("comment") || false}
+                  isShared={userActions[post.id]?.includes("share") || false}
+                  onLike={() => handleLike(post.id)}
+                  onRepost={() => handleRepost(post.id)}
+                  onComment={() => handleComment(post.id)}
+                  onShare={() => handleShare(post.id)}
+                  profilePicture={profileData?.profile_picture}
+                >
+                  {post.text}
+                </Post>
+              );
+            })
           ) : (
             <p>Nenhum post disponível</p>
           )}

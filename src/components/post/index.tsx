@@ -41,8 +41,6 @@ const Post = ({
   onShare,
   profilePicture,
 }: Props) => {
-  console.log("Post props:", { onLike, onRepost, onComment, onShare });
-
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
     const now = new Date();
@@ -91,60 +89,29 @@ const Post = ({
       </S.PostData>
       <S.PostActionsList>
         <S.PostActionItem
-          onClick={() => {
-            console.log("Comment button clicked");
-            if (!onComment) {
-              console.error("onComment is undefined");
-              return;
-            }
-            onComment();
-          }}
+          onClick={onComment}
           $isActive={isCommented}
         >
           <i className="ri-chat-3-fill"></i>
           <p>{comments}</p>
         </S.PostActionItem>
         <S.PostActionItem
-          onClick={() => {
-            console.log("Repost button clicked");
-            if (!onRepost) {
-              console.error("onRepost is undefined");
-              return;
-            }
-            onRepost();
-          }}
+          onClick={onRepost}
           $isActive={isReposted}
-          style={!onRepost ? { pointerEvents: "none", opacity: 0.5 } : {}}
         >
           <i className="ri-repeat-fill"></i>
           <p>{reposts}</p>
         </S.PostActionItem>
         <S.PostActionItem
-          onClick={() => {
-            console.log("Like button clicked");
-            if (!onLike) {
-              console.error("onLike is undefined");
-              return;
-            }
-            onLike();
-          }}
+          onClick={onLike}
           $isActive={isLiked}
-          style={!onLike ? { pointerEvents: "none", opacity: 0.5 } : {}}
         >
           <i className="ri-heart-3-fill"></i>
           <p>{likes}</p>
         </S.PostActionItem>
         <S.PostActionItem
-          onClick={() => {
-            console.log("Share button clicked");
-            if (!onShare) {
-              console.error("onShare is undefined");
-              return;
-            }
-            onShare();
-          }}
+          onClick={onShare}
           $isActive={isShared}
-          style={!onShare ? { pointerEvents: "none", opacity: 0.5 } : {}}
         >
           <i className="ri-upload-2-fill"></i>
           <p>{shares}</p>
