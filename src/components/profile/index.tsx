@@ -5,7 +5,7 @@ import useApi from "../../hooks/useApi";
 import { useState, useEffect } from "react";
 import Modal from "../modal";
 import placeholderImage from "../../assets/images/placeholder.png";
-import { api, API_URL } from "../../api";
+import { api } from "../../api";
 
 const Profile = () => {
   const {
@@ -50,6 +50,7 @@ const Profile = () => {
       comments_count?: number;
       shares_count?: number;
       created_at?: string;
+      image?: string; // Added to match Post model
     }[];
   }>("profile/posts/", { posts: [] });
 
@@ -83,9 +84,7 @@ const Profile = () => {
     if (profileData && !isEditModalOpen) {
       setBio(profileData.bio || "");
       setUsername(profileData.username || "");
-      setPreviewImage(
-        profileData.profile_picture ? `${API_URL}${profileData.profile_picture}` : null
-      );
+      setPreviewImage(profileData.profile_picture || null);
     }
   }, [isEditModalOpen, profileData]);
 
@@ -255,11 +254,14 @@ const Profile = () => {
               <S.ProfilePicture
                 src={
                   profileData?.profile_picture
-                    ? `${API_URL}${profileData.profile_picture}`
+                    ? profileData.profile_picture.startsWith('http')
+                      ? profileData.profile_picture
+                      : `https://res.cloudinary.com/dtqpej5qg${profileData.profile_picture}`
                     : placeholderImage
                 }
                 alt="Perfil"
                 onError={(e) => {
+                  console.warn(`Failed to load profile picture: ${profileData?.profile_picture}`);
                   e.currentTarget.src = placeholderImage;
                 }}
               />
@@ -318,7 +320,20 @@ const Profile = () => {
                   onRepost={() => handleRepost(post.id)}
                   onComment={() => handleComment(post.id)}
                   onShare={() => handleShare(post.id)}
-                  profilePicture={profileData?.profile_picture}
+                  profilePicture={
+                    profileData?.profile_picture
+                      ? profileData.profile_picture.startsWith('http')
+                        ? profileData.profile_picture
+                        : `https://res.cloudinary.com/dtqpej5qg${profileData.profile_picture}`
+                      : placeholderImage
+                  }
+                  image={
+                    post.image
+                      ? post.image.startsWith('http')
+                        ? post.image
+                        : `https://res.cloudinary.com/dtqpej5qg${post.image}`
+                      : undefined
+                  }
                 >
                   {post.text}
                 </Post>
@@ -346,11 +361,14 @@ const Profile = () => {
                   src={
                     previewImage ||
                     (profileData?.profile_picture
-                      ? `${API_URL}${profileData.profile_picture}`
+                      ? profileData.profile_picture.startsWith('http')
+                        ? profileData.profile_picture
+                        : `https://res.cloudinary.com/dtqpej5qg${profileData.profile_picture}`
                       : placeholderImage)
                   }
                   alt="Prévia"
                   onError={(e) => {
+                    console.warn(`Failed to load profile picture preview: ${profileData?.profile_picture}`);
                     e.currentTarget.src = placeholderImage;
                   }}
                 />

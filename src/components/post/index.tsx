@@ -9,6 +9,10 @@ type Props = {
   likes?: number;
   reposts?: number;
   comments?: number;
+  shares?: number;
+  createdAt?: string;
+  profilePicture?: string;
+  image?: string; // Added to support post images
   isLiked?: boolean;
   isReposted?: boolean;
   isCommented?: boolean;
@@ -17,9 +21,6 @@ type Props = {
   onRepost?: () => void;
   onComment?: () => void;
   onShare?: () => void;
-  profilePicture?: string;
-  shares?: number;
-  createdAt?: string;
 };
 
 const Post = ({
@@ -31,6 +32,8 @@ const Post = ({
   comments = 0,
   shares = 0,
   createdAt,
+  profilePicture,
+  image,
   isLiked = false,
   isReposted = false,
   isCommented = false,
@@ -39,7 +42,6 @@ const Post = ({
   onRepost,
   onComment,
   onShare,
-  profilePicture,
 }: Props) => {
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
@@ -69,9 +71,14 @@ const Post = ({
       <S.PostData>
         {profilePicture ? (
           <S.ProfilePicture
-            src={`${API_URL}${profilePicture}`}
+            src={
+              profilePicture.startsWith('http')
+                ? profilePicture
+                : `https://res.cloudinary.com/dtqpej5qg${profilePicture}`
+            }
             alt={`${username}'s profile`}
             onError={(e) => {
+              console.warn(`Failed to load profile picture: ${profilePicture}`);
               e.currentTarget.src = placeholderImage;
             }}
           />
@@ -85,34 +92,37 @@ const Post = ({
             <p>{formatRelativeTime(createdAt)}</p>
           </S.PostUser>
           <p className="description">{children}</p>
+          {image && (
+            <img
+              src={
+                image.startsWith('http')
+                  ? image
+                  : `https://res.cloudinary.com/dtqpej5qg${image}`
+              }
+              alt="Post image"
+              style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', marginTop: '10px' }}
+              onError={(e) => {
+                console.warn(`Failed to load post image: ${image}`);
+                e.currentTarget.src = placeholderImage;
+              }}
+            />
+          )}
         </S.PostDataContent>
       </S.PostData>
       <S.PostActionsList>
-        <S.PostActionItem
-          onClick={onComment}
-          $isActive={isCommented}
-        >
+        <S.PostActionItem onClick={onComment} $isActive={isCommented}>
           <i className="ri-chat-3-fill"></i>
           <p>{comments}</p>
         </S.PostActionItem>
-        <S.PostActionItem
-          onClick={onRepost}
-          $isActive={isReposted}
-        >
+        <S.PostActionItem onClick={onRepost} $isActive={isReposted}>
           <i className="ri-repeat-fill"></i>
           <p>{reposts}</p>
         </S.PostActionItem>
-        <S.PostActionItem
-          onClick={onLike}
-          $isActive={isLiked}
-        >
+        <S.PostActionItem onClick={onLike} $isActive={isLiked}>
           <i className="ri-heart-3-fill"></i>
           <p>{likes}</p>
         </S.PostActionItem>
-        <S.PostActionItem
-          onClick={onShare}
-          $isActive={isShared}
-        >
+        <S.PostActionItem onClick={onShare} $isActive={isShared}>
           <i className="ri-upload-2-fill"></i>
           <p>{shares}</p>
         </S.PostActionItem>
