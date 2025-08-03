@@ -1,6 +1,5 @@
 import * as S from "./styles";
 import placeholderImage from "../../assets/images/placeholder.png";
-import { API_URL } from "../../api";
 
 type Props = {
   children: React.ReactNode;
