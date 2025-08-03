@@ -50,7 +50,7 @@ const Profile = () => {
       comments_count?: number;
       shares_count?: number;
       created_at?: string;
-      image?: string; // Added to match Post model
+      image?: string;
     }[];
   }>("profile/posts/", { posts: [] });
 
@@ -252,13 +252,7 @@ const Profile = () => {
           <S.UserInfo>
             <S.UserInfoEditGroup>
               <S.ProfilePicture
-                src={
-                  profileData?.profile_picture
-                    ? profileData.profile_picture.startsWith('http')
-                      ? profileData.profile_picture
-                      : `https://res.cloudinary.com/dtqpej5qg${profileData.profile_picture}`
-                    : placeholderImage
-                }
+                src={profileData?.profile_picture || placeholderImage}
                 alt="Perfil"
                 onError={(e) => {
                   console.warn(`Failed to load profile picture: ${profileData?.profile_picture}`);
@@ -320,20 +314,8 @@ const Profile = () => {
                   onRepost={() => handleRepost(post.id)}
                   onComment={() => handleComment(post.id)}
                   onShare={() => handleShare(post.id)}
-                  profilePicture={
-                    profileData?.profile_picture
-                      ? profileData.profile_picture.startsWith('http')
-                        ? profileData.profile_picture
-                        : `https://res.cloudinary.com/dtqpej5qg${profileData.profile_picture}`
-                      : placeholderImage
-                  }
-                  image={
-                    post.image
-                      ? post.image.startsWith('http')
-                        ? post.image
-                        : `https://res.cloudinary.com/dtqpej5qg${post.image}`
-                      : undefined
-                  }
+                  profilePicture={profileData?.profile_picture || placeholderImage}
+                  image={post.image || undefined}
                 >
                   {post.text}
                 </Post>
@@ -361,9 +343,7 @@ const Profile = () => {
                   src={
                     previewImage ||
                     (profileData?.profile_picture
-                      ? profileData.profile_picture.startsWith('http')
-                        ? profileData.profile_picture
-                        : `https://res.cloudinary.com/dtqpej5qg${profileData.profile_picture}`
+                      ? profileData.profile_picture
                       : placeholderImage)
                   }
                   alt="Prévia"
