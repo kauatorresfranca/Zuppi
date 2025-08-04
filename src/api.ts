@@ -20,7 +20,6 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
-// Função para atualizar o CSRF token globalmente (opcional, se usar estado global como Redux)
 let globalCsrfToken: string | null = null;
 
 api.interceptors.request.use((config) => {
@@ -38,7 +37,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Função para atualizar o CSRF token após fetch
 export const updateCsrfToken = (token: string) => {
   globalCsrfToken = token;
 };
