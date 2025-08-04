@@ -2,7 +2,7 @@ import Button from "../button";
 import Post from "../post";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
-import { api } from "../../api";
+import { api, setCsrfToken } from "../../api";
 import { useState, useEffect } from "react";
 
 const Content = () => {
@@ -27,14 +27,17 @@ const Content = () => {
   const [userActions, setUserActions] = useState<Record<number, string[]>>({});
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const [csrfToken, setCsrfTokenState] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const response = await api.get("/get_csrf_token/");
-        setCsrfToken(response.data.csrfToken);
-        console.log("CSRF token obtido no Content.tsx");
+        const response = await api.get("/get_csrf_token/", { withCredentials: true });
+        if (response.data.csrfToken) {
+          setCsrfToken(response.data.csrfToken);
+          setCsrfTokenState(response.data.csrfToken); // Armazenar no estado local
+          console.log("CSRF token obtido no Content.tsx");
+        }
       } catch (error) {
         console.error("Falha ao obter o token CSRF no Content.tsx:", error);
       }
@@ -49,9 +52,12 @@ const Content = () => {
         for (const post of posts.posts) {
           try {
             const response = await api.get(`posts/${post.id}/actions/`);
-            actionsMap[post.id] = response.data.actions.map(
-              (a: { action_type: string }) => a.action_type
-            );
+            const actions = response.data.actions;
+            if (Array.isArray(actions)) {
+              actionsMap[post.id] = actions.map((a: { action_type: string }) => a.action_type);
+            } else {
+              actionsMap[post.id] = [];
+            }
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
           }
@@ -70,13 +76,7 @@ const Content = () => {
     setPostError(null);
     try {
       console.log("Enviando post com token:", csrfToken);
-      await api.post(
-        "posts/create/",
-        { text },
-        {
-          headers: { "X-CSRFToken": csrfToken || "" },
-        }
-      );
+      await api.post("posts/create/", { text });
       refetch();
     } catch (err) {
       setPostError("Erro ao criar post");
@@ -87,50 +87,42 @@ const Content = () => {
   };
 
   const toggleAction = async (postId: number, actionType: string) => {
-    console.log(`toggleAction called with postId: ${postId}, actionType: ${actionType}`);
+    console.log(`toggleAction chamado para postId: ${postId}, actionType: ${actionType}`);
     try {
       const response = await api.get(`posts/${postId}/actions/`);
-      const userActionsForPost = response.data.actions || [];
+      const userActionsForPost = Array.isArray(response.data.actions) ? response.data.actions : [];
       const hasAction = userActionsForPost.some(
         (a: { action_type: string }) => a.action_type === actionType
       );
-      console.log(`hasAction for ${actionType}:`, hasAction);
+      console.log(`hasAction para ${actionType}:`, hasAction);
 
       if (hasAction) {
-        await api.delete(`posts/${postId}/${actionType}/`, {
-          headers: { "X-CSRFToken": csrfToken || "" },
-        });
-        console.log(`Removed ${actionType} for post ${postId}`);
+        await api.delete(`posts/${postId}/${actionType}/`);
+        console.log(`Removido ${actionType} para o post ${postId}`);
       } else {
-        await api.post(
-          `posts/${postId}/${actionType}/`,
-          {},
-          {
-            headers: { "X-CSRFToken": csrfToken || "" },
-          }
-        );
-        console.log(`Added ${actionType} for post ${postId}`);
+        await api.post(`posts/${postId}/${actionType}/`, {});
+        console.log(`Adicionado ${actionType} para o post ${postId}`);
       }
       refetch();
     } catch (err) {
-      console.error(`Error performing ${actionType}:`, err);
+      console.error(`Erro ao executar ${actionType}:`, err);
     }
   };
 
   const handleLike = async (postId: number) => {
-    console.log("handleLike called for postId:", postId);
+    console.log("handleLike chamado para postId:", postId);
     await toggleAction(postId, "like");
   };
   const handleRepost = async (postId: number) => {
-    console.log("handleRepost called for postId:", postId);
+    console.log("handleRepost chamado para postId:", postId);
     await toggleAction(postId, "repost");
   };
   const handleComment = async (postId: number) => {
-    console.log("handleComment called for postId:", postId);
+    console.log("handleComment chamado para postId:", postId);
     await toggleAction(postId, "comment");
   };
   const handleShare = async (postId: number) => {
-    console.log("handleShare called for postId:", postId);
+    console.log("handleShare chamado para postId:", postId);
     await toggleAction(postId, "share");
   };
 
@@ -192,38 +184,28 @@ const Content = () => {
         </S.NewPostTools>
       </S.NewPostField>
       {Array.isArray(posts?.posts) &&
-        posts.posts.map((post) => {
-          // Add this log to verify handlers before passing to Post
-          console.log("Passing handlers to Post:", {
-            postId: post.id,
-            onLike: handleLike,
-            onRepost: handleRepost,
-            onComment: handleComment,
-            onShare: handleShare,
-          });
-          return (
-            <Post
-              key={post.id}
-              username={post.author}
-              userid={post.author}
-              likes={post.likes_count}
-              reposts={post.reposts_count}
-              comments={post.comments_count}
-              shares={post.shares_count}
-              createdAt={post.created_at}
-              isLiked={userActions[post.id]?.includes("like") || false}
-              isReposted={userActions[post.id]?.includes("repost") || false}
-              isCommented={userActions[post.id]?.includes("comment") || false}
-              isShared={userActions[post.id]?.includes("share") || false}
-              onLike={() => handleLike(post.id)}
-              onRepost={() => handleRepost(post.id)}
-              onComment={() => handleComment(post.id)}
-              onShare={() => handleShare(post.id)}
-            >
-              {post.text}
-            </Post>
-          );
-        })}
+        posts.posts.map((post) => (
+          <Post
+            key={post.id}
+            username={post.author}
+            userid={post.author}
+            likes={post.likes_count}
+            reposts={post.reposts_count}
+            comments={post.comments_count}
+            shares={post.shares_count}
+            createdAt={post.created_at}
+            isLiked={userActions[post.id]?.includes("like") || false}
+            isReposted={userActions[post.id]?.includes("repost") || false}
+            isCommented={userActions[post.id]?.includes("comment") || false}
+            isShared={userActions[post.id]?.includes("share") || false}
+            onLike={() => handleLike(post.id)}
+            onRepost={() => handleRepost(post.id)}
+            onComment={() => handleComment(post.id)}
+            onShare={() => handleShare(post.id)}
+          >
+            {post.text}
+          </Post>
+        ))}
     </S.Content>
   );
 };

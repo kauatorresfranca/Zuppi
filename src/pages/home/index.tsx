@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../api";
+import { api, setCsrfToken } from "../../api";
 import logo from "../../assets/images/z.png";
 import Button from "../../components/button";
 import * as S from "./styles";
@@ -17,8 +17,13 @@ const Home = () => {
   const fetchCsrfToken = async () => {
     try {
       const response = await api.get("/get_csrf_token/", { withCredentials: true });
-      console.debug("Token CSRF obtido com sucesso:", response.data.csrfToken);
-      setIsCsrfReady(true);
+      if (response.data.csrfToken) {
+        setCsrfToken(response.data.csrfToken);
+        console.debug("Token CSRF obtido e armazenado com sucesso.");
+        setIsCsrfReady(true);
+      } else {
+        throw new Error("Token CSRF não encontrado na resposta.");
+      }
     } catch (error) {
       console.error("Falha ao obter token CSRF:", error);
       setIsCsrfReady(false);
@@ -38,9 +43,6 @@ const Home = () => {
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
 
     try {
-      // Forçar obtenção do token CSRF antes da requisição
-      console.debug("Obtendo token CSRF antes do login");
-      await fetchCsrfToken();
       console.debug(`Tentando login com username: ${username}`);
       await api.post("/login/", { username, password }, { withCredentials: true });
       navigate("/feed");
@@ -69,9 +71,6 @@ const Home = () => {
     }
 
     try {
-      // Forçar obtenção do token CSRF antes da requisição
-      console.debug("Obtendo token CSRF antes do registro");
-      await fetchCsrfToken();
       console.debug(`Tentando registro com username: ${username}, email: ${email}`);
       await api.post("/register/", { username, email, password }, { withCredentials: true });
       navigate("/feed");

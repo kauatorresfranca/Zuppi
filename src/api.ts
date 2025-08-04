@@ -15,9 +15,23 @@ export const setCsrfToken = (token: string) => {
   csrfToken = token;
 };
 
+// Nova função para obter o token de forma assíncrona
+const fetchCsrfTokenAndSetHeader = async () => {
+  try {
+    const response = await api.get("/get_csrf_token/");
+    const newToken = response.data.csrfToken;
+    if (newToken) {
+      setCsrfToken(newToken);
+      return newToken;
+    }
+  } catch (error) {
+    console.error("Falha ao obter novo CSRF token:", error);
+  }
+  return null;
+};
+
 const getCookie = (name: string): string | null => {
   const cookieString = document.cookie;
-  console.debug(`Conteúdo de document.cookie: "${cookieString}"`);
   if (!cookieString) {
     console.warn("Nenhum cookie encontrado no navegador");
     return null;
@@ -37,18 +51,31 @@ const getCookie = (name: string): string | null => {
 };
 
 api.interceptors.request.use(
-  (config) => {
-    // Priorizar o token CSRF armazenado em memória
-    let token = csrfToken || getCookie("csrftoken");
-    if (
-      token &&
-      ["POST", "PUT", "DELETE", "PATCH"].includes(config.method?.toUpperCase() || "")
-    ) {
-      console.debug(`Adicionando X-CSRFToken: ${token} para ${config.method} ${config.url}`);
-      config.headers["X-CSRFToken"] = token;
+  async (config) => {
+    // Verificar se a requisição é segura e se precisa de um token
+    const isModifyingMethod = ["POST", "PUT", "DELETE", "PATCH"].includes(
+      config.method?.toUpperCase() || ""
+    );
+
+    if (isModifyingMethod) {
+      // Priorizar o token CSRF em memória
+      let token = csrfToken || getCookie("csrftoken");
+
+      if (!token) {
+        console.warn("CSRF token ausente, tentando obter um novo antes da requisição.");
+        token = await fetchCsrfTokenAndSetHeader();
+      }
+
+      if (token) {
+        console.debug(`Adicionando X-CSRFToken: ${token} para ${config.method} ${config.url}`);
+        config.headers["X-CSRFToken"] = token;
+      } else {
+        console.error("Falha ao obter CSRF token. Requisição será enviada sem.");
+      }
     } else {
-      console.warn("Nenhum CSRF token disponível para a requisição");
+      console.debug(`Requisição GET/HEAD. Nenhum CSRF token necessário para ${config.url}`);
     }
+
     return config;
   },
   (error) => {
@@ -63,34 +90,23 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const isCsrfError =
       error.response?.status === 403 &&
-      (typeof error.response?.data === "string"
-        ? error.response.data.includes("CSRF verification failed") ||
-          error.response.data.includes("CSRF token missing")
-        : error.response?.data?.detail?.includes?.("CSRF") ||
-          error.response?.data?.error?.includes?.("CSRF"));
+      (error.response.data?.detail?.includes("CSRF") ||
+        (typeof error.response.data === "string" && error.response.data.includes("CSRF")));
 
     if (isCsrfError && !originalRequest._retry) {
-      console.warn("Erro 403 CSRF detectado, tentando obter novo token");
+      console.warn("Erro 403 CSRF detectado, tentando obter e re-enviar com novo token.");
       originalRequest._retry = true;
       try {
-        const response = await api.get("/get_csrf_token/", { withCredentials: true });
-        const newToken = response.data.csrfToken;
-        console.debug("Novo token CSRF obtido:", newToken);
-        setCsrfToken(newToken); // Armazenar o novo token
-        const token = newToken || getCookie("csrftoken");
-        if (token) {
-          console.debug(`Novo CSRF token obtido: ${token}`);
-          originalRequest.headers["X-CSRFToken"] = token;
-        } else {
-          console.error("Falha ao obter novo CSRF token");
-          return Promise.reject(new Error("Não foi possível obter o token CSRF"));
+        const newToken = await fetchCsrfTokenAndSetHeader();
+        if (newToken) {
+          originalRequest.headers["X-CSRFToken"] = newToken;
+          return api(originalRequest);
         }
-        return api(originalRequest);
-      } catch (csrfError) {
-        console.error("Falha ao obter novo CSRF token:", csrfError);
-        return Promise.reject(csrfError);
+      } catch (retryError) {
+        console.error("Falha ao tentar novamente a requisição após erro CSRF:", retryError);
       }
     }
+
     console.error("Erro na requisição:", error.response?.data || error.message);
     return Promise.reject(error);
   }
