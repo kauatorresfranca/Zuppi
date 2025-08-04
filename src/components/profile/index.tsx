@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Modal from "../modal";
 import placeholderImage from "../../assets/images/placeholder.png";
 import { api } from "../../api";
+import Post from "../post";
 
 const Profile = () => {
   const {
