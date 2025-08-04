@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
-import { api, setCsrfToken } from "../../api";
+import { api, setAuthToken } from "../../api";
 import logo from "../../assets/images/z.png";
 import Button from "../../components/button";
 import * as S from "./styles";
@@ -11,29 +11,7 @@ const Home = () => {
   const [modalCriarIsOpen, setModalCriarIsOpen] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
-  const [isCsrfReady, setIsCsrfReady] = useState<boolean>(false);
   const navigate = useNavigate();
-
-  const fetchCsrfToken = async () => {
-    try {
-      const response = await api.get("/get_csrf_token/", { withCredentials: true });
-      if (response.data.csrfToken) {
-        setCsrfToken(response.data.csrfToken);
-        console.debug("Token CSRF obtido e armazenado com sucesso.");
-        setIsCsrfReady(true);
-      } else {
-        throw new Error("Token CSRF não encontrado na resposta.");
-      }
-    } catch (error) {
-      console.error("Falha ao obter token CSRF:", error);
-      setIsCsrfReady(false);
-      setLoginError("Erro ao carregar token de segurança. Tente recarregar a página.");
-    }
-  };
-
-  useEffect(() => {
-    fetchCsrfToken();
-  }, []);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,14 +22,15 @@ const Home = () => {
 
     try {
       console.debug(`Tentando login com username: ${username}`);
-      await api.post("/login/", { username, password }, { withCredentials: true });
+      const response = await api.post("/login/", { username, password });
+      const { token } = response.data;
+      setAuthToken(token);
+      localStorage.setItem("authToken", token);
       navigate("/feed");
     } catch (error: any) {
       console.error("Erro no login:", error.response?.data || error.message);
       const errorMessage =
-        error.response?.data?.detail ||
-        error.response?.data?.error ||
-        "Erro ao fazer login. Verifique suas credenciais ou recarregue a página.";
+        error.response?.data?.detail || "Erro ao fazer login. Verifique suas credenciais.";
       setLoginError(errorMessage);
     }
   };
@@ -72,14 +51,15 @@ const Home = () => {
 
     try {
       console.debug(`Tentando registro com username: ${username}, email: ${email}`);
-      await api.post("/register/", { username, email, password }, { withCredentials: true });
+      const response = await api.post("/register/", { username, email, password });
+      const { token } = response.data;
+      setAuthToken(token);
+      localStorage.setItem("authToken", token);
       navigate("/feed");
     } catch (error: any) {
       console.error("Erro no registro:", error.response?.data || error.message);
       const errorMessage =
-        error.response?.data?.detail ||
-        error.response?.data?.error ||
-        "Erro ao criar conta. Tente recarregar a página.";
+        error.response?.data?.detail || "Erro ao criar conta.";
       setRegisterError(errorMessage);
     }
   };
@@ -96,9 +76,12 @@ const Home = () => {
     }
   }
 
-  if (!isCsrfReady) {
-    return <div>A carregar...</div>;
-  }
+  useEffect(() => {
+    const storedToken = localStorage.getItem("authToken");
+    if (storedToken) {
+      setAuthToken(storedToken);
+    }
+  }, []);
 
   return (
     <>

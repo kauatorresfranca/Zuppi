@@ -27,22 +27,6 @@ const Discover = () => {
   const [isFollowing, setIsFollowing] = useState<number[]>(
     profileData?.following || []
   );
-  // Add state for CSRF token
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
-
-  // Fetch CSRF token on component mount
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      try {
-        const response = await api.get("/get_csrf_token/");
-        setCsrfToken(response.data.csrfToken);
-        console.log("CSRF token obtained in Discover.tsx");
-      } catch (error) {
-        console.error("Failed to fetch CSRF token in Discover.tsx:", error);
-      }
-    };
-    fetchCsrfToken();
-  }, []);
 
   useEffect(() => {
     setIsFollowing(profileData?.following || []);
@@ -52,18 +36,10 @@ const Discover = () => {
     try {
       const isFollowingUser = isFollowing.includes(userId);
       if (isFollowingUser) {
-        await api.delete(`/follow/${userId}/`, {
-          headers: { "X-CSRFToken": csrfToken || "" },
-        });
+        await api.delete(`/follow/${userId}/`);
         setIsFollowing(isFollowing.filter((id) => id !== userId));
       } else {
-        await api.post(
-          `/follow/${userId}/`,
-          {},
-          {
-            headers: { "X-CSRFToken": csrfToken || "" },
-          }
-        );
+        await api.post(`/follow/${userId}/`, {});
         setIsFollowing([...isFollowing, userId]);
       }
       await refetchProfile();

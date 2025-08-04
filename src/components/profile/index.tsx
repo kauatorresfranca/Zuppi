@@ -1,5 +1,4 @@
 import Button from "../button";
-import Post from "../post";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
 import { useState, useEffect } from "react";
@@ -65,20 +64,6 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      try {
-        const response = await api.get("/get_csrf_token/", { withCredentials: true });
-        setCsrfToken(response.data.csrfToken);
-        console.log("CSRF token obtido no Profile.tsx");
-      } catch (err) {
-        console.error("Erro ao obter CSRF token:", err);
-      }
-    };
-    fetchCsrfToken();
-  }, []);
 
   useEffect(() => {
     if (profileData && !isEditModalOpen) {
@@ -113,9 +98,6 @@ const Profile = () => {
   const toggleAction = async (postId: number, actionType: string) => {
     console.log(`toggleAction called with postId: ${postId}, actionType: ${actionType}`);
     try {
-      if (!csrfToken) {
-        throw new Error(`CSRF token não disponível. Não é possível executar ${actionType}.`);
-      }
       const response = await api.get(`posts/${postId}/actions/`);
       const userActionsForPost = response.data.actions || [];
       const hasAction = userActionsForPost.some(
@@ -124,20 +106,10 @@ const Profile = () => {
       console.log(`hasAction for ${actionType}:`, hasAction);
 
       if (hasAction) {
-        await api.delete(`posts/${postId}/${actionType}/`, {
-          headers: { "X-CSRFToken": csrfToken },
-          withCredentials: true,
-        });
+        await api.delete(`posts/${postId}/${actionType}/`);
         console.log(`Removed ${actionType} for post ${postId}`);
       } else {
-        await api.post(
-          `posts/${postId}/${actionType}/`,
-          {},
-          {
-            headers: { "X-CSRFToken": csrfToken },
-            withCredentials: true,
-          }
-        );
+        await api.post(`posts/${postId}/${actionType}/`, {});
         console.log(`Added ${actionType} for post ${postId}`);
       }
       refetchPosts();
@@ -173,9 +145,6 @@ const Profile = () => {
       if (!username || username.length < 3) {
         throw new Error("O nome de utilizador deve ter pelo menos 3 caracteres.");
       }
-      if (!csrfToken) {
-        throw new Error("CSRF token não disponível.");
-      }
 
       const formData = new FormData();
       formData.append("bio", bio || "");
@@ -190,13 +159,7 @@ const Profile = () => {
         formData.append("remove_profile_picture", "true");
       }
 
-      const response = await api.patch("profile/update/", formData, {
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-        withCredentials: true,
-      });
-
+      const response = await api.patch("profile/update/", formData);
       if (response.status !== 200) {
         throw new Error(response.data.error || "Erro ao atualizar perfil");
       }
