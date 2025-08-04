@@ -109,7 +109,7 @@ const Content = () => {
   if (error)
     return (
       <S.Content>
-        <p>Erro ao carregar feed: {error.message || "Tente novamente mais tarde"}</p>
+        <p>Erro ao carregar feed: {error || "Tente novamente mais tarde"}</p>
       </S.Content>
     );
 
