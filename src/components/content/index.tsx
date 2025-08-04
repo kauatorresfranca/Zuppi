@@ -5,24 +5,24 @@ import useApi from "../../hooks/useApi";
 import { api, setCsrfToken } from "../../api";
 import { useState, useEffect } from "react";
 
+interface PostData {
+  created_at?: string;
+  id: number;
+  author: string;
+  text: string;
+  likes_count: number;
+  reposts_count?: number;
+  comments_count?: number;
+  shares_count?: number;
+}
+
 const Content = () => {
   const {
     data: posts,
     loading,
     error,
     refetch,
-  } = useApi<{
-    posts: {
-      created_at?: string;
-      id: number;
-      author: string;
-      text: string;
-      likes_count: number;
-      reposts_count?: number;
-      comments_count?: number;
-      shares_count?: number;
-    }[];
-  }>("feed/", { posts: [] });
+  } = useApi<{ posts: PostData[] }>("feed/", { posts: [] });
 
   const [userActions, setUserActions] = useState<Record<number, string[]>>({});
   const [isPosting, setIsPosting] = useState(false);
@@ -32,7 +32,9 @@ const Content = () => {
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const response = await api.get("/get_csrf_token/", { withCredentials: true });
+        const response = await api.get<{ csrfToken: string }>("/get_csrf_token/", {
+          withCredentials: true,
+        });
         if (response.data.csrfToken) {
           setCsrfToken(response.data.csrfToken);
           console.log("CSRF token obtido no Content.tsx");
@@ -46,25 +48,37 @@ const Content = () => {
 
   useEffect(() => {
     const fetchUserActions = async () => {
-      if (posts && Array.isArray(posts.posts)) {
-        setIsActionsLoading(true);
-        const actionsMap: Record<number, string[]> = {};
+      if (!posts || !Array.isArray(posts.posts)) {
+        console.log("Nenhum post válido para buscar ações:", posts);
+        setUserActions({});
+        setIsActionsLoading(false);
+        return;
+      }
+
+      setIsActionsLoading(true);
+      const actionsMap: Record<number, string[]> = {};
+      try {
         for (const post of posts.posts) {
+          console.debug(`Buscando ações para post ${post.id}`);
           try {
-            const response = await api.get(`posts/${post.id}/actions/`);
-            const actions = Array.isArray(response.data.actions)
-              ? response.data.actions.map((a: { action_type: string }) => a.action_type)
+            const response = await api.get<{ actions: { action_type: string }[] }>(
+              `posts/${post.id}/actions/`
+            );
+            console.debug(`Resposta para post ${post.id}:`, response.data);
+            actionsMap[post.id] = Array.isArray(response.data.actions)
+              ? response.data.actions.map((a) => a.action_type)
               : [];
-            actionsMap[post.id] = actions;
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
-            actionsMap[post.id] = []; // Set empty array on error
+            actionsMap[post.id] = [];
           }
         }
+        console.debug("Actions map atualizado:", actionsMap);
         setUserActions(actionsMap);
+      } catch (err) {
+        console.error("Erro geral em fetchUserActions:", err);
+      } finally {
         setIsActionsLoading(false);
-      } else {
-        console.log("Nenhum post válido para buscar ações:", posts);
       }
     };
     fetchUserActions();
@@ -89,13 +103,13 @@ const Content = () => {
   const toggleAction = async (postId: number, actionType: string) => {
     console.log(`toggleAction chamado para postId: ${postId}, actionType: ${actionType}`);
     try {
-      const response = await api.get(`posts/${postId}/actions/`);
+      const response = await api.get<{ actions: { action_type: string }[] }>(
+        `posts/${postId}/actions/`
+      );
       const userActionsForPost = Array.isArray(response.data.actions)
         ? response.data.actions
         : [];
-      const hasAction = userActionsForPost.some(
-        (a: { action_type: string }) => a.action_type === actionType
-      );
+      const hasAction = userActionsForPost.some((a) => a.action_type === actionType);
       console.log(`hasAction para ${actionType}:`, hasAction);
 
       if (hasAction) {
@@ -128,18 +142,21 @@ const Content = () => {
     await toggleAction(postId, "share");
   };
 
-  if (loading || isActionsLoading)
+  if (loading || isActionsLoading) {
     return (
       <S.Content>
         <p>Carregando...</p>
       </S.Content>
     );
-  if (error)
+  }
+
+  if (error) {
     return (
       <S.Content>
         <p>Erro: {error}</p>
       </S.Content>
     );
+  }
 
   return (
     <S.Content>
@@ -173,9 +190,7 @@ const Content = () => {
             variant="primary"
             disabled={isPosting}
             onClick={() => {
-              const textarea = document.querySelector(
-                "textarea"
-              ) as HTMLTextAreaElement;
+              const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
               const text = textarea.value.trim();
               if (text) handlePostCreate(text);
               textarea.value = "";
@@ -185,29 +200,36 @@ const Content = () => {
           </Button>
         </S.NewPostTools>
       </S.NewPostField>
-      {Array.isArray(posts?.posts) &&
-        posts.posts.map((post) => (
-          <Post
-            key={post.id}
-            username={post.author}
-            userid={post.author}
-            likes={post.likes_count}
-            reposts={post.reposts_count}
-            comments={post.comments_count}
-            shares={post.shares_count}
-            createdAt={post.created_at}
-            isLiked={Array.isArray(userActions[post.id]) && userActions[post.id].includes("like")}
-            isReposted={Array.isArray(userActions[post.id]) && userActions[post.id].includes("repost")}
-            isCommented={Array.isArray(userActions[post.id]) && userActions[post.id].includes("comment")}
-            isShared={Array.isArray(userActions[post.id]) && userActions[post.id].includes("share")}
-            onLike={() => handleLike(post.id)}
-            onRepost={() => handleRepost(post.id)}
-            onComment={() => handleComment(post.id)}
-            onShare={() => handleShare(post.id)}
-          >
-            {post.text}
-          </Post>
-        ))}
+      {Array.isArray(posts?.posts) && posts.posts.length > 0 ? (
+        posts.posts.map((post) => {
+          const actions = userActions[post.id] || [];
+          console.debug(`Renderizando post ${post.id} com ações:`, actions);
+          return (
+            <Post
+              key={post.id}
+              username={post.author}
+              userid={post.author}
+              likes={post.likes_count}
+              reposts={post.reposts_count}
+              comments={post.comments_count}
+              shares={post.shares_count}
+              createdAt={post.created_at}
+              isLiked={Array.isArray(actions) && actions.includes("like")}
+              isReposted={Array.isArray(actions) && actions.includes("repost")}
+              isCommented={Array.isArray(actions) && actions.includes("comment")}
+              isShared={Array.isArray(actions) && actions.includes("share")}
+              onLike={() => handleLike(post.id)}
+              onRepost={() => handleRepost(post.id)}
+              onComment={() => handleComment(post.id)}
+              onShare={() => handleShare(post.id)}
+            >
+              {post.text}
+            </Post>
+          );
+        })
+      ) : (
+        <p>Nenhum post disponível</p>
+      )}
     </S.Content>
   );
 };
