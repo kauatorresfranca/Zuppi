@@ -27,7 +27,7 @@ const Content = () => {
   const [userActions, setUserActions] = useState<Record<number, string[]>>({});
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
-  const [csrfToken, setCsrfTokenState] = useState<string | null>(null);
+  const [isActionsLoading, setIsActionsLoading] = useState(false);
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
@@ -35,7 +35,6 @@ const Content = () => {
         const response = await api.get("/get_csrf_token/", { withCredentials: true });
         if (response.data.csrfToken) {
           setCsrfToken(response.data.csrfToken);
-          setCsrfTokenState(response.data.csrfToken); // Armazenar no estado local
           console.log("CSRF token obtido no Content.tsx");
         }
       } catch (error) {
@@ -48,21 +47,22 @@ const Content = () => {
   useEffect(() => {
     const fetchUserActions = async () => {
       if (posts && Array.isArray(posts.posts)) {
+        setIsActionsLoading(true);
         const actionsMap: Record<number, string[]> = {};
         for (const post of posts.posts) {
           try {
             const response = await api.get(`posts/${post.id}/actions/`);
-            const actions = response.data.actions;
-            if (Array.isArray(actions)) {
-              actionsMap[post.id] = actions.map((a: { action_type: string }) => a.action_type);
-            } else {
-              actionsMap[post.id] = [];
-            }
+            const actions = Array.isArray(response.data.actions)
+              ? response.data.actions.map((a: { action_type: string }) => a.action_type)
+              : [];
+            actionsMap[post.id] = actions;
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
+            actionsMap[post.id] = []; // Set empty array on error
           }
         }
         setUserActions(actionsMap);
+        setIsActionsLoading(false);
       } else {
         console.log("Nenhum post válido para buscar ações:", posts);
       }
@@ -75,7 +75,7 @@ const Content = () => {
     setIsPosting(true);
     setPostError(null);
     try {
-      console.log("Enviando post com token:", csrfToken);
+      console.log("Enviando post...");
       await api.post("posts/create/", { text });
       refetch();
     } catch (err) {
@@ -90,7 +90,9 @@ const Content = () => {
     console.log(`toggleAction chamado para postId: ${postId}, actionType: ${actionType}`);
     try {
       const response = await api.get(`posts/${postId}/actions/`);
-      const userActionsForPost = Array.isArray(response.data.actions) ? response.data.actions : [];
+      const userActionsForPost = Array.isArray(response.data.actions)
+        ? response.data.actions
+        : [];
       const hasAction = userActionsForPost.some(
         (a: { action_type: string }) => a.action_type === actionType
       );
@@ -126,7 +128,7 @@ const Content = () => {
     await toggleAction(postId, "share");
   };
 
-  if (loading)
+  if (loading || isActionsLoading)
     return (
       <S.Content>
         <p>Carregando...</p>
@@ -194,10 +196,10 @@ const Content = () => {
             comments={post.comments_count}
             shares={post.shares_count}
             createdAt={post.created_at}
-            isLiked={userActions[post.id]?.includes("like") || false}
-            isReposted={userActions[post.id]?.includes("repost") || false}
-            isCommented={userActions[post.id]?.includes("comment") || false}
-            isShared={userActions[post.id]?.includes("share") || false}
+            isLiked={Array.isArray(userActions[post.id]) && userActions[post.id].includes("like")}
+            isReposted={Array.isArray(userActions[post.id]) && userActions[post.id].includes("repost")}
+            isCommented={Array.isArray(userActions[post.id]) && userActions[post.id].includes("comment")}
+            isShared={Array.isArray(userActions[post.id]) && userActions[post.id].includes("share")}
             onLike={() => handleLike(post.id)}
             onRepost={() => handleRepost(post.id)}
             onComment={() => handleComment(post.id)}
