@@ -16,8 +16,8 @@ const Home = () => {
 
   const fetchCsrfToken = async () => {
     try {
-      await api.get("/get_csrf_token/", { withCredentials: true });
-      console.debug("Token CSRF obtido com sucesso");
+      const response = await api.get("/get_csrf_token/", { withCredentials: true });
+      console.debug("Token CSRF obtido com sucesso:", response.data.csrfToken);
       setIsCsrfReady(true);
     } catch (error) {
       console.error("Falha ao obter token CSRF:", error);
@@ -38,21 +38,19 @@ const Home = () => {
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
 
     try {
-      // Tenta obter o token CSRF antes da requisição, caso não esteja disponível
-      if (!isCsrfReady) {
-        console.debug("CSRF não está pronto, obtendo novo token");
-        await fetchCsrfToken();
-      }
+      // Forçar obtenção do token CSRF antes da requisição
+      console.debug("Obtendo token CSRF antes do login");
+      await fetchCsrfToken();
       console.debug(`Tentando login com username: ${username}`);
       await api.post("/login/", { username, password }, { withCredentials: true });
       navigate("/feed");
     } catch (error: any) {
       console.error("Erro no login:", error.response?.data || error.message);
-      setLoginError(
-        error.response?.data?.detail || 
-        error.response?.data?.error || 
-        "Erro ao fazer login. Verifique suas credenciais ou tente novamente."
-      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        "Erro ao fazer login. Verifique suas credenciais ou recarregue a página.";
+      setLoginError(errorMessage);
     }
   };
 
@@ -71,21 +69,19 @@ const Home = () => {
     }
 
     try {
-      // Tenta obter o token CSRF antes da requisição, caso não esteja disponível
-      if (!isCsrfReady) {
-        console.debug("CSRF não está pronto, obtendo novo token");
-        await fetchCsrfToken();
-      }
+      // Forçar obtenção do token CSRF antes da requisição
+      console.debug("Obtendo token CSRF antes do registro");
+      await fetchCsrfToken();
       console.debug(`Tentando registro com username: ${username}, email: ${email}`);
       await api.post("/register/", { username, email, password }, { withCredentials: true });
       navigate("/feed");
     } catch (error: any) {
       console.error("Erro no registro:", error.response?.data || error.message);
-      setRegisterError(
-        error.response?.data?.detail || 
-        error.response?.data?.error || 
-        "Erro ao criar conta. Tente novamente."
-      );
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        "Erro ao criar conta. Tente recarregar a página.";
+      setRegisterError(errorMessage);
     }
   };
 

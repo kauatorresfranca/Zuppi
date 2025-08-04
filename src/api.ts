@@ -9,16 +9,18 @@ const api = axios.create({
 
 const getCookie = (name: string): string | null => {
   const cookieString = document.cookie;
+  console.debug(`Conteúdo de document.cookie: "${cookieString}"`);
   if (!cookieString) {
     console.warn("Nenhum cookie encontrado no navegador");
     return null;
   }
-  const cookies = cookieString.split(';');
+  const cookies = cookieString.split(';').map(cookie => cookie.trim());
   for (const cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.split('=').map(s => s.trim());
-    if (cookieName === name) {
-      console.debug(`Cookie ${name} encontrado: ${cookieValue}`);
-      return decodeURIComponent(cookieValue);
+    const [cookieName, cookieValue] = cookie.split('=');
+    if (cookieName?.trim() === name) {
+      const value = cookieValue ? decodeURIComponent(cookieValue) : null;
+      console.debug(`Cookie ${name} encontrado: ${value}`);
+      return value;
     }
   }
   console.warn(`Cookie ${name} não encontrado`);
@@ -49,16 +51,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (
+    const isCsrfError =
       error.response?.status === 403 &&
-      (error.response?.data?.detail?.includes("CSRF") || error.response?.data?.error?.includes("CSRF")) &&
-      !originalRequest._retry
-    ) {
+      (error.response?.data?.detail?.includes("CSRF") ||
+       error.response?.data?.error?.includes("CSRF") ||
+       (typeof error.response?.data === "string" && error.response.data.includes("CSRF verification failed")));
+    
+    if (isCsrfError && !originalRequest._retry) {
       console.warn("Erro 403 CSRF detectado, tentando obter novo token");
       originalRequest._retry = true;
       try {
-        await api.get("/get_csrf_token/", { withCredentials: true });
-        const csrfToken = getCookie("csrftoken");
+        const response = await api.get("/get_csrf_token/", { withCredentials: true });
+        console.debug("Novo token CSRF obtido:", response.data.csrfToken);
+        const csrfToken = getCookie("csrftoken") || response.data.csrfToken;
         if (csrfToken) {
           console.debug(`Novo CSRF token obtido: ${csrfToken}`);
           originalRequest.headers["X-CSRFToken"] = csrfToken;
