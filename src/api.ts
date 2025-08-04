@@ -7,6 +7,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Armazenar o token CSRF em memória
+let csrfToken: string | null = null;
+
+export const setCsrfToken = (token: string) => {
+  console.debug(`Armazenando CSRF token: ${token}`);
+  csrfToken = token;
+};
+
 const getCookie = (name: string): string | null => {
   const cookieString = document.cookie;
   console.debug(`Conteúdo de document.cookie: "${cookieString}"`);
@@ -14,9 +22,10 @@ const getCookie = (name: string): string | null => {
     console.warn("Nenhum cookie encontrado no navegador");
     return null;
   }
-  const cookies = cookieString.split(';').map(cookie => cookie.trim());
+  const cookies = cookieString.split(";").map((cookie) => cookie.trim());
   for (const cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.split('=');
+    if (!cookie) continue;
+    const [cookieName, cookieValue] = cookie.split("=");
     if (cookieName?.trim() === name) {
       const value = cookieValue ? decodeURIComponent(cookieValue) : null;
       console.debug(`Cookie ${name} encontrado: ${value}`);
@@ -29,14 +38,15 @@ const getCookie = (name: string): string | null => {
 
 api.interceptors.request.use(
   (config) => {
-    const csrfToken = getCookie("csrftoken");
+    // Priorizar o token CSRF armazenado em memória
+    let token = csrfToken || getCookie("csrftoken");
     if (
-      csrfToken &&
+      token &&
       ["POST", "PUT", "DELETE", "PATCH"].includes(config.method?.toUpperCase() || "")
     ) {
-      console.debug(`Adicionando X-CSRFToken: ${csrfToken} para ${config.method} ${config.url}`);
-      config.headers["X-CSRFToken"] = csrfToken;
-    } else if (!csrfToken) {
+      console.debug(`Adicionando X-CSRFToken: ${token} para ${config.method} ${config.url}`);
+      config.headers["X-CSRFToken"] = token;
+    } else {
       console.warn("Nenhum CSRF token disponível para a requisição");
     }
     return config;
@@ -53,20 +63,24 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const isCsrfError =
       error.response?.status === 403 &&
-      (error.response?.data?.detail?.includes("CSRF") ||
-       error.response?.data?.error?.includes("CSRF") ||
-       (typeof error.response?.data === "string" && error.response.data.includes("CSRF verification failed")));
-    
+      (typeof error.response?.data === "string"
+        ? error.response.data.includes("CSRF verification failed") ||
+          error.response.data.includes("CSRF token missing")
+        : error.response?.data?.detail?.includes?.("CSRF") ||
+          error.response?.data?.error?.includes?.("CSRF"));
+
     if (isCsrfError && !originalRequest._retry) {
       console.warn("Erro 403 CSRF detectado, tentando obter novo token");
       originalRequest._retry = true;
       try {
         const response = await api.get("/get_csrf_token/", { withCredentials: true });
-        console.debug("Novo token CSRF obtido:", response.data.csrfToken);
-        const csrfToken = getCookie("csrftoken") || response.data.csrfToken;
-        if (csrfToken) {
-          console.debug(`Novo CSRF token obtido: ${csrfToken}`);
-          originalRequest.headers["X-CSRFToken"] = csrfToken;
+        const newToken = response.data.csrfToken;
+        console.debug("Novo token CSRF obtido:", newToken);
+        setCsrfToken(newToken); // Armazenar o novo token
+        const token = newToken || getCookie("csrftoken");
+        if (token) {
+          console.debug(`Novo CSRF token obtido: ${token}`);
+          originalRequest.headers["X-CSRFToken"] = token;
         } else {
           console.error("Falha ao obter novo CSRF token");
           return Promise.reject(new Error("Não foi possível obter o token CSRF"));
