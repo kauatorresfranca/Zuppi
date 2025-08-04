@@ -81,16 +81,19 @@ const Profile = () => {
         for (const post of postsData.posts) {
           try {
             const response = await api.get(`posts/${post.id}/actions/`);
-            actionsMap[post.id] = response.data.actions.map(
-              (a: { action_type: string }) => a.action_type
-            );
+            // Ensure response.data.actions is an array
+            actionsMap[post.id] = Array.isArray(response.data.actions)
+              ? response.data.actions.map((a: { action_type: string }) => a.action_type)
+              : [];
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
+            actionsMap[post.id] = []; // Set empty array on error
           }
         }
         setUserActions(actionsMap);
       } else {
         console.log("Nenhum post válido para buscar ações:", postsData);
+        setUserActions({}); // Reset to empty object if no valid posts
       }
     };
     fetchUserActions();
@@ -100,7 +103,7 @@ const Profile = () => {
     console.log(`toggleAction called with postId: ${postId}, actionType: ${actionType}`);
     try {
       const response = await api.get(`posts/${postId}/actions/`);
-      const userActionsForPost = response.data.actions || [];
+      const userActionsForPost = Array.isArray(response.data.actions) ? response.data.actions : [];
       const hasAction = userActionsForPost.some(
         (a: { action_type: string }) => a.action_type === actionType
       );
@@ -253,6 +256,7 @@ const Profile = () => {
         <S.PostsContainer>
           {Array.isArray(postsData?.posts) ? (
             postsData.posts.map((post) => {
+              const postActions = Array.isArray(userActions[post.id]) ? userActions[post.id] : [];
               console.log("Passing handlers to Post:", {
                 postId: post.id,
                 onLike: handleLike,
@@ -270,10 +274,10 @@ const Profile = () => {
                   comments={post.comments_count}
                   shares={post.shares_count}
                   createdAt={post.created_at}
-                  isLiked={userActions[post.id]?.includes("like") || false}
-                  isReposted={userActions[post.id]?.includes("repost") || false}
-                  isCommented={userActions[post.id]?.includes("comment") || false}
-                  isShared={userActions[post.id]?.includes("share") || false}
+                  isLiked={postActions.includes("like") || false}
+                  isReposted={postActions.includes("repost") || false}
+                  isCommented={postActions.includes("comment") || false}
+                  isShared={postActions.includes("share") || false}
                   onLike={() => handleLike(post.id)}
                   onRepost={() => handleRepost(post.id)}
                   onComment={() => handleComment(post.id)}

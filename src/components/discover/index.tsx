@@ -25,16 +25,16 @@ const Discover = () => {
   }>("profile/", { following: [] });
 
   const [isFollowing, setIsFollowing] = useState<number[]>(
-    profileData?.following || []
+    Array.isArray(profileData?.following) ? profileData.following : []
   );
 
   useEffect(() => {
-    setIsFollowing(profileData?.following || []);
+    setIsFollowing(Array.isArray(profileData?.following) ? profileData.following : []);
   }, [profileData]);
 
   const toggleFollow = async (userId: number) => {
     try {
-      const isFollowingUser = isFollowing.includes(userId);
+      const isFollowingUser = Array.isArray(isFollowing) && isFollowing.includes(userId);
       if (isFollowingUser) {
         await api.delete(`/follow/${userId}/`);
         setIsFollowing(isFollowing.filter((id) => id !== userId));
@@ -126,7 +126,7 @@ const Discover = () => {
                   onClick={() => toggleFollow(user.id)}
                   disabled={false}
                 >
-                  {isFollowing.includes(user.id) ? "Following" : "Follow"}
+                  {Array.isArray(isFollowing) && isFollowing.includes(user.id) ? "Following" : "Follow"}
                 </Button>
               </S.ToFollowItem>
             ))}

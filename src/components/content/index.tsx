@@ -28,17 +28,6 @@ const Content = () => {
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
 
-  // A lógica de obtenção do CSRF token agora está no interceptor do Axios.
-  // Não é mais necessário um estado local para o token aqui.
-  // Apenas a linha abaixo foi removida, já que a lógica agora está em api.ts.
-  // const [csrfToken, setCsrfToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    // A busca pelo CSRF token foi movida para o interceptor do Axios em api.ts
-    // para garantir que o token esteja sempre disponível antes de qualquer requisição POST.
-    // Portanto, este bloco de código não é mais necessário aqui.
-  }, []);
-
   useEffect(() => {
     const fetchUserActions = async () => {
       if (posts && Array.isArray(posts.posts)) {
@@ -47,18 +36,18 @@ const Content = () => {
           try {
             const response = await api.get(`posts/${post.id}/actions/`);
             const actions = response.data.actions;
-            if (Array.isArray(actions)) {
-              actionsMap[post.id] = actions.map((a: { action_type: string }) => a.action_type);
-            } else {
-              actionsMap[post.id] = [];
-            }
+            actionsMap[post.id] = Array.isArray(actions)
+              ? actions.map((a: { action_type: string }) => a.action_type)
+              : [];
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
+            actionsMap[post.id] = []; // Set empty array on error
           }
         }
         setUserActions(actionsMap);
       } else {
         console.log("Nenhum post válido para buscar ações:", posts);
+        setUserActions({}); // Reset to empty object if no valid posts
       }
     };
     fetchUserActions();
@@ -120,7 +109,7 @@ const Content = () => {
   if (error)
     return (
       <S.Content>
-        <p>Erro: {error}</p>
+        <p>Erro ao carregar feed: {error.message || "Tente novamente mais tarde"}</p>
       </S.Content>
     );
 
@@ -169,29 +158,31 @@ const Content = () => {
         </S.NewPostTools>
       </S.NewPostField>
       {Array.isArray(posts?.posts) &&
-        posts.posts.map((post) => (
-          <Post
-            key={post.id}
-            username={post.author}
-            userid={post.author}
-            likes={post.likes_count}
-            reposts={post.reposts_count}
-            comments={post.comments_count}
-            shares={post.shares_count}
-            createdAt={post.created_at}
-            // Aqui está a correção
-            isLiked={userActions[post.id]?.includes("like") || false}
-            isReposted={userActions[post.id]?.includes("repost") || false}
-            isCommented={userActions[post.id]?.includes("comment") || false}
-            isShared={userActions[post.id]?.includes("share") || false}
-            onLike={() => handleLike(post.id)}
-            onRepost={() => handleRepost(post.id)}
-            onComment={() => handleComment(post.id)}
-            onShare={() => handleShare(post.id)}
-          >
-            {post.text}
-          </Post>
-        ))}
+        posts.posts.map((post) => {
+          const postActions = Array.isArray(userActions[post.id]) ? userActions[post.id] : [];
+          return (
+            <Post
+              key={post.id}
+              username={post.author}
+              userid={post.author}
+              likes={post.likes_count}
+              reposts={post.reposts_count}
+              comments={post.comments_count}
+              shares={post.shares_count}
+              createdAt={post.created_at}
+              isLiked={postActions.includes("like") || false}
+              isReposted={postActions.includes("repost") || false}
+              isCommented={postActions.includes("comment") || false}
+              isShared={postActions.includes("share") || false}
+              onLike={() => handleLike(post.id)}
+              onRepost={() => handleRepost(post.id)}
+              onComment={() => handleComment(post.id)}
+              onShare={() => handleShare(post.id)}
+            >
+              {post.text}
+            </Post>
+          );
+        })}
     </S.Content>
   );
 };
