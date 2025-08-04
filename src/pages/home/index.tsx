@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
-import { api, updateCsrfToken } from "../../api";
+import { api } from "../../api";
 import logo from "../../assets/images/z.png";
 import Button from "../../components/button";
 import * as S from "./styles";
@@ -11,23 +11,17 @@ const Home = () => {
   const [modalCriarIsOpen, setModalCriarIsOpen] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [isCsrfReady, setIsCsrfReady] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const response = await api.get("/get_csrf_token/", { withCredentials: true });
-        const token = response.data.csrfToken;
-        updateCsrfToken(token); // Atualiza o token global
-
-        // Forçar a definição do cookie manualmente
-        document.cookie = `csrftoken=${token}; path=/; max-age=31449600; ${
-          process.env.NODE_ENV === "production" ? "secure; samesite=none" : "samesite=lax"
-        }`;
-        console.log("CSRF token fetched successfully:", token);
-        console.log("Cookies after fetch:", document.cookie);
+        await api.get("/get_csrf_token/", { withCredentials: true });
+        setIsCsrfReady(true);
       } catch (error) {
         console.error("Failed to fetch CSRF token:", error);
+        setIsCsrfReady(false);
       }
     };
     fetchCsrfToken();
@@ -35,22 +29,22 @@ const Home = () => {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoginError(null);
     const form = e.target as HTMLFormElement;
     const username = (form.elements.namedItem("username") as HTMLInputElement).value;
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+    
     try {
-      console.log("Cookies before login:", document.cookie);
-      const response = await api.post("/login/", { username, password }, { withCredentials: true });
-      console.log("Login response:", response.data);
+      await api.post("/login/", { username, password }, { withCredentials: true });
       navigate("/feed");
     } catch (error: any) {
-      console.error("Login error:", error);
       setLoginError(error.response?.data?.error || "Erro ao fazer login");
     }
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setRegisterError(null);
     const form = e.target as HTMLFormElement;
     const username = (form.elements.namedItem("username") as HTMLInputElement).value;
     const email = (form.elements.namedItem("email") as HTMLInputElement).value;
@@ -61,13 +55,11 @@ const Home = () => {
       setRegisterError("As senhas não coincidem");
       return;
     }
+
     try {
-      console.log("Cookies before register:", document.cookie);
-      const response = await api.post("/register/", { username, email, password }, { withCredentials: true });
-      console.log("Register response:", response.data);
+      await api.post("/register/", { username, email, password }, { withCredentials: true });
       navigate("/feed");
     } catch (error: any) {
-      console.error("Register error:", error);
       setRegisterError(error.response?.data?.error || "Erro ao criar conta");
     }
   };
@@ -82,6 +74,10 @@ const Home = () => {
       setModalCriarIsOpen(true);
       setLoginError(null);
     }
+  }
+
+  if (!isCsrfReady) {
+    return <div>A carregar...</div>;
   }
 
   return (

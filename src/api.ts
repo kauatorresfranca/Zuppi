@@ -20,25 +20,32 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
-let globalCsrfToken: string | null = null;
-
 api.interceptors.request.use((config) => {
-  const csrfToken = globalCsrfToken || getCookie("csrftoken");
-
+  const csrfToken = getCookie("csrftoken");
   if (
     csrfToken &&
-    ["POST", "PUT", "DELETE", "PATCH"].includes(
-      config.method?.toUpperCase() || ""
-    )
+    ["POST", "PUT", "DELETE", "PATCH"].includes(config.method?.toUpperCase() || "")
   ) {
     config.headers["X-CSRFToken"] = csrfToken;
   }
-
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
-export const updateCsrfToken = (token: string) => {
-  globalCsrfToken = token;
-};
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 403 && error.response?.data?.error?.includes("CSRF")) {
+      try {
+        await api.get("/get_csrf_token/", { withCredentials: true });
+        return api(error.config);
+      } catch (csrfError) {
+        console.error("Failed to refresh CSRF token:", csrfError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export { api };
