@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"; // Importe useState do React
+import { useEffect, useState } from "react";
 import Modal from "../../components/modal";
 import { useNavigate } from "react-router-dom";
 import { api, updateCsrfToken } from "../../api";
@@ -16,9 +16,14 @@ const Home = () => {
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const response = await api.get("/get_csrf_token/");
+        const response = await api.get("/get_csrf_token/", { withCredentials: true });
         const token = response.data.csrfToken;
         updateCsrfToken(token); // Atualiza o token global
+
+        // Forçar a definição do cookie manualmente
+        document.cookie = `csrftoken=${token}; path=/; max-age=31449600; ${
+          process.env.NODE_ENV === "production" ? "secure; samesite=none" : "samesite=lax"
+        }`;
         console.log("CSRF token fetched successfully:", token);
         console.log("Cookies after fetch:", document.cookie);
       } catch (error) {
@@ -35,7 +40,7 @@ const Home = () => {
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
     try {
       console.log("Cookies before login:", document.cookie);
-      const response = await api.post("/login/", { username, password });
+      const response = await api.post("/login/", { username, password }, { withCredentials: true });
       console.log("Login response:", response.data);
       navigate("/feed");
     } catch (error: any) {
@@ -58,7 +63,7 @@ const Home = () => {
     }
     try {
       console.log("Cookies before register:", document.cookie);
-      const response = await api.post("/register/", { username, email, password });
+      const response = await api.post("/register/", { username, email, password }, { withCredentials: true });
       console.log("Register response:", response.data);
       navigate("/feed");
     } catch (error: any) {
