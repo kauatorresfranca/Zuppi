@@ -1,7 +1,7 @@
-import { useMemo } from "react";
 import Button from "../button";
 import * as S from "./styles";
 import useApi from "../../hooks/useApi";
+import { useState, useEffect } from "react";
 import { api } from "../../api";
 
 const Discover = () => {
@@ -24,22 +24,23 @@ const Discover = () => {
     following: number[];
   }>("profile/", { following: [] });
 
-  // Handle the case where following might not be an array
-  const followingIds = useMemo(() => {
-    const ids = Array.isArray(profileData?.following) ? profileData.following : [];
-    console.log("Profile Data:", profileData);
-    console.log("Current following IDs:", ids);
-    return ids;
+  const [isFollowing, setIsFollowing] = useState<number[]>(
+    Array.isArray(profileData?.following) ? profileData.following : []
+  );
+
+  useEffect(() => {
+    setIsFollowing(Array.isArray(profileData?.following) ? profileData.following : []);
   }, [profileData]);
 
   const toggleFollow = async (userId: number) => {
     try {
-      const isFollowingUser = followingIds.includes(userId);
-      console.log(`Toggling follow for user ${userId}. Currently following: ${isFollowingUser}`);
+      const isFollowingUser = Array.isArray(isFollowing) && isFollowing.includes(userId);
       if (isFollowingUser) {
         await api.delete(`/follow/${userId}/`);
+        setIsFollowing(isFollowing.filter((id) => id !== userId));
       } else {
         await api.post(`/follow/${userId}/`, {});
+        setIsFollowing([...isFollowing, userId]);
       }
       await refetchProfile();
       await refetchSuggestions();
@@ -48,21 +49,18 @@ const Discover = () => {
     }
   };
 
-  if (suggestionsLoading || profileLoading) {
+  if (suggestionsLoading || profileLoading)
     return (
       <S.Discover>
         <p>Loading...</p>
       </S.Discover>
     );
-  }
-
-  if (suggestionsError || profileError) {
+  if (suggestionsError || profileError)
     return (
       <S.Discover>
         <p>Error: {suggestionsError || profileError}</p>
       </S.Discover>
     );
-  }
 
   return (
     <S.Discover>
@@ -113,7 +111,7 @@ const Discover = () => {
       <S.ToFollow>
         <h2>Who to follow</h2>
         <S.ToFollowList>
-          {suggestions?.suggestions?.length > 0 ? (
+          {suggestions &&
             suggestions.suggestions.map((user) => (
               <S.ToFollowItem key={user.id}>
                 <S.ToFollowItemInfo>
@@ -128,13 +126,10 @@ const Discover = () => {
                   onClick={() => toggleFollow(user.id)}
                   disabled={false}
                 >
-                  {followingIds.includes(user.id) ? "Following" : "Follow"}
+                  {Array.isArray(isFollowing) && isFollowing.includes(user.id) ? "Following" : "Follow"}
                 </Button>
               </S.ToFollowItem>
-            ))
-          ) : (
-            <p>No suggestions available</p>
-          )}
+            ))}
         </S.ToFollowList>
       </S.ToFollow>
     </S.Discover>
