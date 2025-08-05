@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { breakpoints } from "../../../styles";
 
 export const Container = styled.div`
   display: flex;
@@ -10,6 +11,16 @@ export const Container = styled.div`
   img {
     height: 260px;
     width: 260px;
+  }
+
+  @media (max-width: ${breakpoints.tablet}) {
+    flex-direction: column;
+    gap: 60px;
+
+    img {
+      height: 200px;
+      width: 200px;
+    }
   }
 `;
 
