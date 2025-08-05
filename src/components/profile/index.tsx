@@ -81,7 +81,6 @@ const Profile = () => {
         for (const post of postsData.posts) {
           try {
             const response = await api.get(`posts/${post.id}/actions/`);
-            // Ensure response.data.actions is an array
             actionsMap[post.id] = Array.isArray(response.data.actions)
               ? response.data.actions.map((a: { action_type: string }) => a.action_type)
               : [];
@@ -153,7 +152,7 @@ const Profile = () => {
       const formData = new FormData();
       formData.append("bio", bio || "");
       formData.append("username", username);
-      if (newPassword && oldPassword) {
+      if (newPassword && oldPassword && newPassword.trim() && oldPassword.trim()) {
         formData.append("old_password", oldPassword);
         formData.append("new_password", newPassword);
       }
@@ -163,9 +162,14 @@ const Profile = () => {
         formData.append("remove_profile_picture", "true");
       }
 
+      // Log FormData contents for debugging
+      for (const [key, value] of formData.entries()) {
+        console.log(`FormData: ${key}=${value}`);
+      }
+
       const response = await api.patch("profile/update/", formData);
       if (response.status !== 200) {
-        throw new Error(response.data.error || "Erro ao atualizar perfil");
+        throw new Error(response.data?.detail || response.data?.error || "Erro ao atualizar perfil");
       }
 
       refetchProfile();
@@ -176,7 +180,8 @@ const Profile = () => {
       setProfilePicture(null);
       setPreviewImage(null);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || "Erro ao atualizar perfil";
+      console.error("Erro ao atualizar perfil:", err.response?.data || err.message);
+      const errorMessage = err.response?.data?.detail || err.response?.data?.error || err.message || "Erro ao atualizar perfil";
       setEditError(errorMessage);
     } finally {
       setIsEditing(false);
