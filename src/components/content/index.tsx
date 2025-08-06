@@ -4,8 +4,10 @@ import * as S from "./styles";
 import useApi from "../../hooks/useApi";
 import { api } from "../../api";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Content = () => {
+  const navigate = useNavigate();
   const {
     data: posts,
     loading,
@@ -86,8 +88,12 @@ const Content = () => {
         console.log(`Added ${actionType} for post ${postId}`);
       }
       refetch();
-    } catch (err) {
-      console.error(`Erro ao executar ${actionType}:`, err);
+    } catch (err: any) {
+      console.error(`Erro ao executar ${actionType} para post ${postId}:`, err);
+      if (err.response?.status === 401) {
+        console.log("Token inválido, redirecionando para login");
+        navigate("/");
+      }
     }
   };
 
@@ -129,6 +135,54 @@ const Content = () => {
     return (
       <S.Content>
         <p>Erro ao carregar feed: {error || "Tente novamente mais tarde"}</p>
+      </S.Content>
+    );
+  if (posts?.posts?.length === 0)
+    return (
+      <S.Content>
+        <S.ContentHeader>
+          <h2>Para você</h2>
+        </S.ContentHeader>
+        <S.NewPostField>
+          <textarea
+            placeholder="O que está acontecendo?"
+            disabled={isPosting}
+            onKeyPress={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                const text = (e.target as HTMLTextAreaElement).value.trim();
+                if (text) handlePostCreate(text);
+                (e.target as HTMLTextAreaElement).value = "";
+              }
+            }}
+          />
+          {postError && <S.ErrorMessage>{postError}</S.ErrorMessage>}
+          <S.NewPostTools>
+            <S.IconList>
+              <i className="ri-image-2-fill"></i>
+              <i className="ri-film-fill"></i>
+              <i className="ri-file-list-3-line"></i>
+              <i className="ri-emoji-sticker-fill"></i>
+              <i className="ri-calendar-2-fill"></i>
+              <i className="ri-map-pin-fill"></i>
+            </S.IconList>
+            <Button
+              variant="primary"
+              disabled={isPosting}
+              onClick={() => {
+                const textarea = document.querySelector(
+                  "textarea"
+                ) as HTMLTextAreaElement;
+                const text = textarea.value.trim();
+                if (text) handlePostCreate(text);
+                textarea.value = "";
+              }}
+            >
+              {isPosting ? "Enviando..." : "Zuppi"}
+            </Button>
+          </S.NewPostTools>
+        </S.NewPostField>
+        <p>Nenhum post no feed ainda.</p>
       </S.Content>
     );
 
@@ -196,6 +250,7 @@ const Content = () => {
               onRepost={() => handleRepost(post.id)}
               onComment={(text) => handleComment(post.id, text)}
               onShare={() => handleShare(post.id)}
+              postId={post.id}
             >
               {post.text}
             </Post>

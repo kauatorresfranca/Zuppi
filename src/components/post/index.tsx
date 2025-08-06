@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as S from "./styles";
 import placeholderImage from "../../assets/images/placeholder.png";
 import Modal from "../modal";
+import { api } from "../../api";
 
 type Props = {
   children: React.ReactNode;
@@ -21,7 +22,15 @@ type Props = {
   onRepost?: () => void;
   onComment?: (text: string) => void;
   onShare?: () => void;
-  postId?: number;
+  postId: number;
+};
+
+type Comment = {
+  id: number;
+  text: string;
+  author: string;
+  created_at: string;
+  profile_picture: string;
 };
 
 const Post = ({
@@ -47,6 +56,9 @@ const Post = ({
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentsList, setCommentsList] = useState<Comment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
 
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
@@ -71,10 +83,45 @@ const Post = ({
     return `${diffMonths} mês${diffMonths !== 1 ? "es" : ""} atrás`;
   };
 
+  const fetchComments = async () => {
+    if (!postId) {
+      console.warn("postId is undefined, cannot fetch comments");
+      setCommentsError("ID do post inválido");
+      setIsLoadingComments(false);
+      return;
+    }
+    setIsLoadingComments(true);
+    setCommentsError(null);
+    try {
+      console.log(`Fetching comments for post ${postId}`);
+      const response = await api.get(`posts/${postId}/comments/`);
+      const comments = response.data.comments || [];
+      console.log(`Received comments for post ${postId}:`, comments);
+      setCommentsList(comments);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || "Erro ao carregar comentários";
+      console.error(`Erro ao carregar comentários para post ${postId}:`, err);
+      setCommentsError(errorMessage);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCommentModalOpen && postId) {
+      fetchComments();
+    }
+  }, [isCommentModalOpen, postId]);
+
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) {
       setCommentError("O comentário não pode estar vazio");
       console.log("Comentário vazio, não enviado");
+      return;
+    }
+    if (!postId) {
+      setCommentError("ID do post inválido");
+      console.warn("postId is undefined, cannot submit comment");
       return;
     }
     console.log(`handleCommentSubmit called with commentText: "${commentText}"`);
@@ -84,7 +131,7 @@ const Post = ({
         await onComment(commentText.trim());
         console.log(`Comment submitted for post ${postId}: "${commentText}"`);
         setCommentText("");
-        setIsCommentModalOpen(false);
+        await fetchComments(); // Atualizar a lista de comentários após envio
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || err.message || "Erro ao adicionar comentário";
@@ -168,18 +215,29 @@ const Post = ({
           ></i>
         </S.ModalHeader>
         <S.ModalContent>
+          <S.CommentList>
+            {isLoadingComments && <p>Carregando comentários...</p>}
+            {commentsError && <S.ErrorMessage>{commentsError}</S.ErrorMessage>}
+            {commentsList.length === 0 && !isLoadingComments && !commentsError && (
+              <p>Nenhum comentário ainda.</p>
+            )}
+            {commentsList.map((comment) => (
+              <S.CommentItem key={comment.id}>
+                <S.CommentAuthor>{comment.author}</S.CommentAuthor>
+                <S.CommentText>{comment.text}</S.CommentText>
+                <S.CommentDate>{formatRelativeTime(comment.created_at)}</S.CommentDate>
+              </S.CommentItem>
+            ))}
+          </S.CommentList>
           <S.CommentInput
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="Escreva um comentário..."
           />
-          {commentError && <p>{commentError}</p>}
+          {commentError && <S.ErrorMessage>{commentError}</S.ErrorMessage>}
           <S.CommentButton onClick={handleCommentSubmit} disabled={!commentText.trim()}>
             Comentar
           </S.CommentButton>
-          <S.CommentList>
-            {/* Comentários serão renderizados aqui pelo Profile */}
-          </S.CommentList>
         </S.ModalContent>
       </Modal>
     </>

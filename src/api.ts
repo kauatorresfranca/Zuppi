@@ -18,6 +18,13 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
+// Initialize token from localStorage on module load
+const storedToken = localStorage.getItem("authToken");
+if (storedToken) {
+  console.debug("Inicializando token do localStorage");
+  setAuthToken(storedToken);
+}
+
 api.interceptors.request.use(
   (config) => {
     console.debug(`Requisição para ${config.method?.toUpperCase()} ${config.url}, Headers:`, config.headers, 'Payload:', config.data);

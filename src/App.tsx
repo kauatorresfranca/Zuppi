@@ -11,9 +11,16 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const storedToken = localStorage.getItem("authToken");
+        if (!storedToken) {
+          console.log("No token found in localStorage, redirecting to login");
+          setIsAuthenticated(false);
+          return;
+        }
         await api.get("profile/");
         setIsAuthenticated(true);
-      } catch {
+      } catch (err) {
+        console.error("Auth check failed:", err);
         setIsAuthenticated(false);
       }
     };
