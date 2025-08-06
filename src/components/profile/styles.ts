@@ -231,7 +231,7 @@ export const FormGroup = styled.div`
 
   label {
     font-size: 14px;
-    color: #000000;
+    color: #fff; /* Corrigido para #fff para consistência com o tema */
   }
 
   input,
@@ -241,8 +241,8 @@ export const FormGroup = styled.div`
     margin-bottom: 16px;
     border: 1px solid #8899a6;
     border-radius: 4px;
-    background-color: transparent;
-    color: #000000;
+    background-color: #1f2937; /* Fundo escuro para combinar com o tema */
+    color: #fff; /* Corrigido para #fff para consistência */
     font-size: 14px;
 
     &::placeholder {
@@ -289,4 +289,41 @@ export const ErrorMessage = styled.p`
   font-size: 14px;
   margin-top: 8px;
   text-align: center;
+`;
+
+export const CommentList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+`;
+
+export const CommentItem = styled.div`
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.09);
+`;
+
+export const CommentProfilePicture = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+export const CommentContent = styled.div`
+  flex: 1;
+`;
+
+export const CommentUser = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e5e7eb;
+  font-size: 14px;
+
+  strong {
+    font-weight: 600;
+  }
 `;

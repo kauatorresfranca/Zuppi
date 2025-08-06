@@ -1,5 +1,7 @@
+import { useState } from "react";
 import * as S from "./styles";
 import placeholderImage from "../../assets/images/placeholder.png";
+import Modal from "../modal";
 
 type Props = {
   children: React.ReactNode;
@@ -11,15 +13,15 @@ type Props = {
   shares?: number;
   createdAt?: string;
   profilePicture?: string;
-  image?: string; // Added to support post images
+  image?: string;
   isLiked?: boolean;
   isReposted?: boolean;
-  isCommented?: boolean;
   isShared?: boolean;
   onLike?: () => void;
   onRepost?: () => void;
-  onComment?: () => void;
+  onComment?: (text: string) => void;
   onShare?: () => void;
+  postId?: number;
 };
 
 const Post = ({
@@ -35,13 +37,17 @@ const Post = ({
   image,
   isLiked = false,
   isReposted = false,
-  isCommented = false,
   isShared = false,
   onLike,
   onRepost,
   onComment,
   onShare,
+  postId,
 }: Props) => {
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
+
   const formatRelativeTime = (dateStr?: string): string => {
     if (!dateStr) return "Agora mesmo";
     const now = new Date();
@@ -65,70 +71,118 @@ const Post = ({
     return `${diffMonths} mês${diffMonths !== 1 ? "es" : ""} atrás`;
   };
 
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim()) {
+      setCommentError("O comentário não pode estar vazio");
+      console.log("Comentário vazio, não enviado");
+      return;
+    }
+    console.log(`handleCommentSubmit called with commentText: "${commentText}"`);
+    setCommentError(null);
+    try {
+      if (onComment) {
+        await onComment(commentText.trim());
+        console.log(`Comment submitted for post ${postId}: "${commentText}"`);
+        setCommentText("");
+        setIsCommentModalOpen(false);
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || "Erro ao adicionar comentário";
+      console.error(`Erro ao executar comment para post ${postId}:`, err);
+      setCommentError(errorMessage);
+    }
+  };
+
   return (
-    <S.Container>
-      <S.PostData>
-        {profilePicture ? (
-          <S.ProfilePicture
-            src={
-              profilePicture.startsWith('http')
-                ? profilePicture
-                : `https://res.cloudinary.com/dtqpej5qg${profilePicture}`
-            }
-            alt={`${username}'s profile`}
-            onError={(e) => {
-              console.warn(`Failed to load profile picture: ${profilePicture}`);
-              e.currentTarget.src = placeholderImage;
-            }}
-          />
-        ) : (
-          <S.ProfilePicture src={placeholderImage} alt="Placeholder" />
-        )}
-        <S.PostDataContent>
-          <S.PostUser>
-            <h2>{username}</h2>
-            <p>@{userid}</p>
-            <p>{formatRelativeTime(createdAt)}</p>
-          </S.PostUser>
-          <p className="description">{children}</p>
-          {image && (
-            <img
+    <>
+      <S.Container>
+        <S.PostData>
+          {profilePicture ? (
+            <S.ProfilePicture
               src={
-                image.startsWith('http')
-                  ? image
-                  : `https://res.cloudinary.com/dtqpej5qg${image}`
+                profilePicture.startsWith("http")
+                  ? profilePicture
+                  : `https://res.cloudinary.com/dtqpej5qg${profilePicture}`
               }
-              alt="Post image"
-              style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', marginTop: '10px' }}
+              alt={`${username}'s profile`}
               onError={(e) => {
-                console.warn(`Failed to load post image: ${image}`);
+                console.warn(`Failed to load profile picture: ${profilePicture}`);
                 e.currentTarget.src = placeholderImage;
               }}
             />
+          ) : (
+            <S.ProfilePicture src={placeholderImage} alt="Placeholder" />
           )}
-        </S.PostDataContent>
-      </S.PostData>
-      <S.PostActionsList>
-        <S.PostActionItem onClick={onComment} $isActive={isCommented}>
-          <i className="ri-chat-3-fill"></i>
-          <p>{comments}</p>
-        </S.PostActionItem>
-        <S.PostActionItem onClick={onRepost} $isActive={isReposted}>
-          <i className="ri-repeat-fill"></i>
-          <p>{reposts}</p>
-        </S.PostActionItem>
-        <S.PostActionItem onClick={onLike} $isActive={isLiked}>
-          <i className="ri-heart-3-fill"></i>
-          <p>{likes}</p>
-        </S.PostActionItem>
-        <S.PostActionItem onClick={onShare} $isActive={isShared}>
-          <i className="ri-upload-2-fill"></i>
-          <p>{shares}</p>
-        </S.PostActionItem>
-        <S.PostActionItem></S.PostActionItem>
-      </S.PostActionsList>
-      <i className="ri-more-fill more"></i>
-    </S.Container>
+          <S.PostDataContent>
+            <S.PostUser>
+              <h2>{username}</h2>
+              <p>@{userid}</p>
+              <p>{formatRelativeTime(createdAt)}</p>
+            </S.PostUser>
+            <p className="description">{children}</p>
+            {image && (
+              <img
+                src={
+                  image.startsWith("http")
+                    ? image
+                    : `https://res.cloudinary.com/dtqpej5qg${image}`
+                }
+                alt="Post image"
+                style={{ maxWidth: "100%", maxHeight: "400px", objectFit: "contain", marginTop: "10px" }}
+                onError={(e) => {
+                  console.warn(`Failed to load post image: ${image}`);
+                  e.currentTarget.src = placeholderImage;
+                }}
+              />
+            )}
+          </S.PostDataContent>
+        </S.PostData>
+        <S.PostActionsList>
+          <S.PostActionItem onClick={() => setIsCommentModalOpen(true)}>
+            <i className="ri-chat-3-fill"></i>
+            <p>{comments}</p>
+          </S.PostActionItem>
+          <S.PostActionItem onClick={onRepost} $isActive={isReposted}>
+            <i className="ri-repeat-fill"></i>
+            <p>{reposts}</p>
+          </S.PostActionItem>
+          <S.PostActionItem onClick={onLike} $isActive={isLiked}>
+            <i className="ri-heart-3-fill"></i>
+            <p>{likes}</p>
+          </S.PostActionItem>
+          <S.PostActionItem onClick={onShare} $isActive={isShared}>
+            <i className="ri-upload-2-fill"></i>
+            <p>{shares}</p>
+          </S.PostActionItem>
+          <S.PostActionItem></S.PostActionItem>
+        </S.PostActionsList>
+        <i className="ri-more-fill more"></i>
+      </S.Container>
+
+      <Modal isOpen={isCommentModalOpen} onClose={() => setIsCommentModalOpen(false)}>
+        <S.ModalHeader>
+          <h2>Comentários</h2>
+          <i
+            className="ri-close-fill"
+            onClick={() => setIsCommentModalOpen(false)}
+          ></i>
+        </S.ModalHeader>
+        <S.ModalContent>
+          <S.CommentInput
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Escreva um comentário..."
+          />
+          {commentError && <p>{commentError}</p>}
+          <S.CommentButton onClick={handleCommentSubmit} disabled={!commentText.trim()}>
+            Comentar
+          </S.CommentButton>
+          <S.CommentList>
+            {/* Comentários serão renderizados aqui pelo Profile */}
+          </S.CommentList>
+        </S.ModalContent>
+      </Modal>
+    </>
   );
 };
 

@@ -55,6 +55,7 @@ const Profile = () => {
   }>("profile/posts/", { posts: [] });
 
   const [userActions, setUserActions] = useState<Record<number, string[]>>({});
+  const [comments, setComments] = useState<Record<number, { id: number; text: string; author: string; created_at: string; profile_picture: string }[]>>({});
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [bio, setBio] = useState("");
   const [username, setUsername] = useState("");
@@ -65,6 +66,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [commentError, setCommentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (profileData && !isEditModalOpen) {
@@ -81,22 +83,41 @@ const Profile = () => {
         for (const post of postsData.posts) {
           try {
             const response = await api.get(`posts/${post.id}/actions/`);
-            // Ensure response.data.actions is an array
             actionsMap[post.id] = Array.isArray(response.data.actions)
               ? response.data.actions.map((a: { action_type: string }) => a.action_type)
               : [];
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
-            actionsMap[post.id] = []; // Set empty array on error
+            actionsMap[post.id] = [];
           }
         }
         setUserActions(actionsMap);
       } else {
         console.log("Nenhum post válido para buscar ações:", postsData);
-        setUserActions({}); // Reset to empty object if no valid posts
+        setUserActions({});
       }
     };
+
+    const fetchComments = async () => {
+      if (postsData && Array.isArray(postsData.posts)) {
+        const commentsMap: Record<number, { id: number; text: string; author: string; created_at: string; profile_picture: string }[]> = {};
+        for (const post of postsData.posts) {
+          try {
+            const response = await api.get(`posts/${post.id}/comments/`);
+            commentsMap[post.id] = Array.isArray(response.data.comments)
+              ? response.data.comments
+              : [];
+          } catch (err) {
+            console.error(`Erro ao carregar comentários para post ${post.id}:`, err);
+            commentsMap[post.id] = [];
+          }
+        }
+        setComments(commentsMap);
+      }
+    };
+
     fetchUserActions();
+    fetchComments();
   }, [postsData]);
 
   const toggleAction = async (postId: number, actionType: string) => {
@@ -132,10 +153,28 @@ const Profile = () => {
     await toggleAction(postId, "repost");
   };
 
-  const handleComment = async (postId: number) => {
-    console.log("handleComment called for postId:", postId);
-    await toggleAction(postId, "comment");
-  };
+ const handleComment = async (postId: number, text: string) => {
+  console.log(`handleComment called for postId: ${postId}, text: "${text}"`);
+  try {
+    setCommentError(null);
+    const payload = { text: text.trim() };
+    console.log("Sending comment payload:", payload);
+    const response = await api.post(`posts/${postId}/comment/`, JSON.stringify(payload), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    console.log("Comment response:", response.data);
+    refetchPosts();
+    const commentsResponse = await api.get(`posts/${postId}/comments/`);
+    setComments((prev) => ({
+      ...prev,
+      [postId]: Array.isArray(commentsResponse.data.comments) ? commentsResponse.data.comments : [],
+    }));
+  } catch (err: any) {
+    const errorMessage = err.response?.data?.detail || err.message || "Erro ao adicionar comentário";
+    console.error(`Erro ao adicionar comentário para post ${postId}:`, errorMessage);
+    setCommentError(errorMessage);
+  }
+};
 
   const handleShare = async (postId: number) => {
     console.log("handleShare called for postId:", postId);
@@ -257,16 +296,11 @@ const Profile = () => {
           {Array.isArray(postsData?.posts) ? (
             postsData.posts.map((post) => {
               const postActions = Array.isArray(userActions[post.id]) ? userActions[post.id] : [];
-              console.log("Passing handlers to Post:", {
-                postId: post.id,
-                onLike: handleLike,
-                onRepost: handleRepost,
-                onComment: handleComment,
-                onShare: handleShare,
-              });
+              const postComments = Array.isArray(comments[post.id]) ? comments[post.id] : [];
               return (
                 <Post
                   key={post.id}
+                  postId={post.id}
                   username={post.author}
                   userid={post.author}
                   likes={post.likes_count}
@@ -276,16 +310,35 @@ const Profile = () => {
                   createdAt={post.created_at}
                   isLiked={postActions.includes("like") || false}
                   isReposted={postActions.includes("repost") || false}
-                  isCommented={postActions.includes("comment") || false}
                   isShared={postActions.includes("share") || false}
                   onLike={() => handleLike(post.id)}
                   onRepost={() => handleRepost(post.id)}
-                  onComment={() => handleComment(post.id)}
+                  onComment={(text) => handleComment(post.id, text)}
                   onShare={() => handleShare(post.id)}
                   profilePicture={profileData?.profile_picture || placeholderImage}
                   image={post.image || undefined}
                 >
                   {post.text}
+                  <S.CommentList>
+                    {postComments.map((comment) => (
+                      <S.CommentItem key={comment.id}>
+                        <S.CommentProfilePicture
+                          src={comment.profile_picture || placeholderImage}
+                          alt={`${comment.author}'s profile`}
+                          onError={(e) => {
+                            e.currentTarget.src = placeholderImage;
+                          }}
+                        />
+                        <S.CommentContent>
+                          <S.CommentUser>
+                            <strong>{comment.author}</strong> · {formatRelativeTime(comment.created_at)}
+                          </S.CommentUser>
+                          <p>{comment.text}</p>
+                        </S.CommentContent>
+                      </S.CommentItem>
+                    ))}
+                    {commentError && <S.ErrorMessage>{commentError}</S.ErrorMessage>}
+                  </S.CommentList>
                 </Post>
               );
             })
@@ -402,6 +455,29 @@ const Profile = () => {
       </Modal>
     </>
   );
+};
+
+// Função auxiliar para formatar o tempo relativo
+const formatRelativeTime = (dateStr: string): string => {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffSeconds < 60) return "Agora mesmo";
+  if (diffMinutes < 60)
+    return `${diffMinutes} minuto${diffMinutes !== 1 ? "s" : ""} atrás`;
+  if (diffHours < 24)
+    return `${diffHours} hora${diffHours !== 1 ? "s" : ""} atrás`;
+  if (diffDays < 7)
+    return `${diffDays} dia${diffDays !== 1 ? "s" : ""} atrás`;
+  if (diffWeeks < 4)
+    return `${diffWeeks} semana${diffWeeks !== 1 ? "s" : ""} atrás`;
+  return `${diffMonths} mês${diffMonths !== 1 ? "es" : ""} atrás`;
 };
 
 export default Profile;

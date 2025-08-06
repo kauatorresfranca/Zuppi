@@ -4,7 +4,9 @@ export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const api = axios.create({
   baseURL: `${API_URL}/api/`,
-  // Removido withCredentials, pois usamos TokenAuthentication
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 export const setAuthToken = (token: string | null) => {
@@ -18,7 +20,7 @@ export const setAuthToken = (token: string | null) => {
 
 api.interceptors.request.use(
   (config) => {
-    console.debug(`Requisição para ${config.method} ${config.url}, Headers:`, config.headers);
+    console.debug(`Requisição para ${config.method?.toUpperCase()} ${config.url}, Headers:`, config.headers, 'Payload:', config.data);
     return config;
   },
   (error) => {

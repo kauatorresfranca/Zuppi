@@ -106,3 +106,63 @@ export const PostActionItem = styled.div<{ $isActive?: boolean }>`
     }
   }
 `;
+
+export const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.09);
+
+  h2 {
+    color: #fff;
+    font-size: 18px;
+  }
+
+  i {
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+  }
+`;
+
+export const ModalContent = styled.div`
+  padding: 16px;
+`;
+
+export const CommentInput = styled.textarea`
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #1f2937;
+  color: #fff;
+  resize: none;
+  margin-bottom: 10px;
+
+  &:focus {
+    outline: none;
+    border-color: #1d9bf0;
+  }
+`;
+
+export const CommentButton = styled.button<{ disabled?: boolean }>`
+  padding: 8px 16px;
+  background-color: ${(props) => (props.disabled ? "#6b7280" : "#1d9bf0")};
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  margin-bottom: 10px;
+
+  &:hover {
+    background-color: ${(props) => (props.disabled ? "#6b7280" : "#1a8cd8")};
+  }
+`;
+
+export const CommentList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;

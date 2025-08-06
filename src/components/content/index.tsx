@@ -41,13 +41,13 @@ const Content = () => {
               : [];
           } catch (err) {
             console.error(`Erro ao carregar ações para post ${post.id}:`, err);
-            actionsMap[post.id] = []; // Set empty array on error
+            actionsMap[post.id] = [];
           }
         }
         setUserActions(actionsMap);
       } else {
         console.log("Nenhum post válido para buscar ações:", posts);
-        setUserActions({}); // Reset to empty object if no valid posts
+        setUserActions({});
       }
     };
     fetchUserActions();
@@ -58,7 +58,8 @@ const Content = () => {
     setIsPosting(true);
     setPostError(null);
     try {
-      await api.post("posts/create/", { text });
+      console.log(`handlePostCreate called with text: "${text}"`);
+      await api.post("posts/create/", { text }, { headers: { "Content-Type": "application/json" } });
       refetch();
     } catch (err) {
       setPostError("Erro ao criar post");
@@ -70,6 +71,7 @@ const Content = () => {
 
   const toggleAction = async (postId: number, actionType: string) => {
     try {
+      console.log(`toggleAction called with postId: ${postId}, actionType: ${actionType}`);
       const response = await api.get(`posts/${postId}/actions/`);
       const userActionsForPost = Array.isArray(response.data.actions) ? response.data.actions : [];
       const hasAction = userActionsForPost.some(
@@ -78,8 +80,10 @@ const Content = () => {
 
       if (hasAction) {
         await api.delete(`posts/${postId}/${actionType}/`);
+        console.log(`Removed ${actionType} for post ${postId}`);
       } else {
         await api.post(`posts/${postId}/${actionType}/`, {});
+        console.log(`Added ${actionType} for post ${postId}`);
       }
       refetch();
     } catch (err) {
@@ -90,12 +94,27 @@ const Content = () => {
   const handleLike = async (postId: number) => {
     await toggleAction(postId, "like");
   };
+
   const handleRepost = async (postId: number) => {
     await toggleAction(postId, "repost");
   };
-  const handleComment = async (postId: number) => {
-    await toggleAction(postId, "comment");
+
+  const handleComment = async (postId: number, text: string) => {
+    if (!text) return;
+    console.log(`handleComment called with postId: ${postId}, text: "${text}"`);
+    try {
+      const payload = { text: text.trim() };
+      console.log(`Sending comment payload for post ${postId}:`, payload);
+      await api.post(`posts/${postId}/comment/`, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+      refetch();
+    } catch (err) {
+      console.error(`Erro ao executar comment para post ${postId}:`, err);
+      throw err; // Propagate error to be handled by Post component
+    }
   };
+
   const handleShare = async (postId: number) => {
     await toggleAction(postId, "share");
   };
@@ -172,11 +191,10 @@ const Content = () => {
               createdAt={post.created_at}
               isLiked={postActions.includes("like") || false}
               isReposted={postActions.includes("repost") || false}
-              isCommented={postActions.includes("comment") || false}
               isShared={postActions.includes("share") || false}
               onLike={() => handleLike(post.id)}
               onRepost={() => handleRepost(post.id)}
-              onComment={() => handleComment(post.id)}
+              onComment={(text) => handleComment(post.id, text)}
               onShare={() => handleShare(post.id)}
             >
               {post.text}
