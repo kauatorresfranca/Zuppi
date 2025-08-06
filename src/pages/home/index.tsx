@@ -14,26 +14,37 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoginError(null);
-    const form = e.target as HTMLFormElement;
-    const username = (form.elements.namedItem("username") as HTMLInputElement).value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+  e.preventDefault();
+  setLoginError(null);
+  const form = e.target as HTMLFormElement;
+  const username = (form.elements.namedItem("username") as HTMLInputElement).value;
+  const password = (form.elements.namedItem("password") as HTMLInputElement).value;
 
-    try {
-      console.debug(`Tentando login com username: ${username}`);
-      const response = await api.post("/login/", { username, password });
-      const { token } = response.data;
-      setAuthToken(token);
-      localStorage.setItem("authToken", token);
-      navigate("/feed");
-    } catch (error: any) {
-      console.error("Erro no login:", error.response?.data || error.message);
-      const errorMessage =
-        error.response?.data?.detail || "Erro ao fazer login. Verifique suas credenciais.";
-      setLoginError(errorMessage);
-    }
-  };
+  try {
+    console.debug(`Tentando login com username: ${username}`);
+    // Limpar token existente
+    setAuthToken(null);
+    localStorage.removeItem("authToken");
+    console.debug("Token e localStorage limpos antes do login");
+
+    // Fazer requisição sem header Authorization
+    const response = await api.post(
+      "/login/",
+      { username, password },
+      { headers: { Authorization: undefined } } // Remover Authorization
+    );
+    const { token } = response.data;
+    console.debug(`Login bem-sucedido, token: ${token.slice(0, 8)}...`);
+    setAuthToken(token);
+    localStorage.setItem("authToken", token);
+    navigate("/feed");
+  } catch (error: any) {
+    console.error("Erro no login:", error.response?.data || error.message);
+    const errorMessage =
+      error.response?.data?.detail || "Erro ao fazer login. Verifique suas credenciais.";
+    setLoginError(errorMessage);
+  }
+};
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
